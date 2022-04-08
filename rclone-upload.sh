@@ -54,7 +54,8 @@ if /bin/findmnt $pathFrom -o FSTYPE -n | grep fuse; then
     exit 1
 fi
 
-# Simple way to rotate log files.
+# Simple way to rotate log files
+# Can be removed if you have something else handling it
 if [ -f "$rcloneLog" ]; then
     if [ -f "$rcloneLog-1" ]; then
         rm -f "$rcloneLog-2"
@@ -64,13 +65,11 @@ if [ -f "$rcloneLog" ]; then
     echo -n > $rcloneLog
 fi
 
-# Your current script is missing this
-logTime=$(date +'%s')
-echo "YYYY/MM/DD HH:MM:SS"
-
 # Make sure files older than +1 min exist
 if find $pathFrom -type f -mmin +1 | read; then
-
+    # Your current script is missing this
+    logTime=$(date +'%s')
+    
     echo "YYYY/MM/DD HH:MM:SS"
     echo "$(date "+%Y/%m/%d %T") RCLONE: UPLOAD STARTED" | tee -a $rcloneLog
     
