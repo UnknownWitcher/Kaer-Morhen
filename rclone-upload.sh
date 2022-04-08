@@ -35,10 +35,10 @@ if [[ $(pidof -x "$(basename "$0")" -o %PPID) ]]; then
 fi
 
 # Local only, do not set as your rclone or mergerfs mount point for google
-pathFrom="/media/mergerfs/local/media"
+pathFrom="/media/mergerfs/local/media/"
 
 # Rclone Mount Path
-pathTo="gcrypt:media"
+pathTo="gcrypt:/media/"
 
 # Your service account files
 serviceAccounts=(
@@ -89,13 +89,13 @@ if find $pathFrom -type f -mmin +1 | read; then
 
             "--delete-empty-src-dirs"
             "--fast-list"
+            "--max-transfer" "700G"
             
             "--min-age" "1m"
             "--drive-chunk-size" "128M"
             "--tpslimit" "12"
             "--tpslimit-burst" "12"
             "--transfers" "6"
-            
             "--log-file" "$rcloneLog"
             
             "--dry-run" # comment this out if the script has a successful dry run.
