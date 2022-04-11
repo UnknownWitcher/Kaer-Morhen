@@ -30,7 +30,7 @@
 # refer to https://crontab.guru if you want to adjust the time
 
 # Exit if running
-if [[ $(pidof -x "$(basename "$0")" -o %PPID) ]]; then
+if pidof -o %PPID -x "$0"; then
     exit 1
 fi
 
