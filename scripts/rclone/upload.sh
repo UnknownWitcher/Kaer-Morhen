@@ -30,10 +30,20 @@
 # refer to https://crontab.guru if you want to adjust the time
 
 # Exit if already running
-if pidof -o %PPID -x "$0" > /dev/null 2>&1; then
-    echo "Already running.."
-    exit 1
+#if pidof -o %PPID -x "$0" > /dev/null 2>&1; then
+#    echo "Already running.."
+#    exit 1
+#fi
+padlock="/docker/scripts/upload.lock"
+ 
+trap 'rm -f "$padlock"; exit 0' SIGINT SIGTERM # you may need to use "\$padlock" if this doesn't work
+ 
+if [ -f "$padlock" ]; then
+    echo "$padlock exists."
+    exit
 fi
+
+touch $padlock
 
 # Local only, do not set as your rclone or mergerfs mount point
 PATH_FROM="/media/mergerfs/local/media/"
@@ -119,4 +129,6 @@ if find $PATH_FROM -type f -mmin +1 | read; then
     
 fi
 
+rm -f "$padlock"
+trap - SIGINT SIGTERM
 exit
