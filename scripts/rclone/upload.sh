@@ -1,5 +1,5 @@
 #!/bin/bash
-# RCLONE UPLOAD CRON TAB SCRIPT - for a friend
+# RCLONE UPLOAD SCRIPT - for a friend
 #
 # rclone --dry-run is enabled to allow you to test this script before using it.
 # you just need to comment that line out or just remove it from arguments=() 
@@ -30,7 +30,8 @@
 # refer to https://crontab.guru if you want to adjust the time
 
 # Exit if already running
-if pidof -o %PPID -x "$0"; then
+if pidof -o %PPID -x "$0" > /dev/null 2>&1; then
+    echo "Already running.."
     exit 1
 fi
 
@@ -52,7 +53,7 @@ RCLONE_LOG="/media/logs/uploadmedia.log"
 
 # IF PATH_FROM is not a local disk then exit
 if /bin/findmnt $PATH_FROM -o FSTYPE -n | grep fuse; then
-    echo "YYYY/MM/DD HH:MM:SS"
+    echo "YYYY/MM/DD HH:MM:SS" | tee -a $RCLONE_LOG
     echo "$(date "+%Y/%m/%d %T") SYSTEM: not local path '$PATH_FROM'" | tee -a $RCLONE_LOG
     exit 1
 fi
@@ -79,7 +80,7 @@ if find $PATH_FROM -type f -mmin +1 | read; then
     # Your current script is missing this
     LOGTIME=$(date +'%s')
     
-    echo "YYYY/MM/DD HH:MM:SS"
+    echo "YYYY/MM/DD HH:MM:SS" | tee -a $RCLONE_LOG
     echo "$(date "+%Y/%m/%d %T") RCLONE: UPLOAD STARTED" | tee -a $RCLONE_LOG
     
     # We now loop through each file in $serviceAccounts
