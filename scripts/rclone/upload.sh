@@ -70,8 +70,8 @@ if [ -f "$RCLONE_LOG" ]; then
 fi
 
 # Find files in PATH_FROM with wrong mod date
-# Change mod date/time to 1 minute ago
-find $PATH_FROM -type f -mtime -1 -exec touch {} -d "-1 minute" \;
+# Change mod date/time to 2 minute ago
+find $PATH_FROM -type f -mtime -0 -exec touch {} -d "-2 minute" \;
 
 sleep 1
 
