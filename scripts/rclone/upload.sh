@@ -4,7 +4,7 @@
 # rclone --dry-run is enabled to allow you to test this script before using it.
 # you just need to comment that line out or just remove it from arguments=() 
 #
-# If you use a custom config path, then comment out
+# If you use a custom config path, then uncomment
 # --config line within arguments=() then replace
 # "/your/path/rclone.conf" with your config location.
 # 
