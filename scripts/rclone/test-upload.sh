@@ -51,7 +51,7 @@ min_file_age() {
 }
 # Rotates logs based on rize
 rotate_log() {
-    MAX_SIZE=100000 # 1MB # 1MB
+    MAX_SIZE=1000000 # 1MB
 
     if [[ $(stat -c%s "$RCLONE_LOG") -ge $MAX_SIZE ]]; then
 
@@ -64,15 +64,15 @@ rotate_log() {
         for i in {2..1}; do
             if [[ -f "$PATH_NOEXT-$i.$FILE_EXT" ]]; then
                 if [[ "$REMOVE_OLDEST" == true ]]; then
-                    echo "rm -f $PATH_NOEXT-$i.$FILE_EXT"
+                    rm -f "$PATH_NOEXT-$i.$FILE_EXT"
                 else
-                    echo "mv $PATH_NOEXT-$i.$FILE_EXT" "$PATH_NOEXT-$((i+1)).$FILE_EXT"
+                    mv "$PATH_NOEXT-$i.$FILE_EXT" "$PATH_NOEXT-$((i+1)).$FILE_EXT"
                 fi
             fi
             REMOVE_OLDEST=false
         done
 
-        echo "mv $RCLONE_LOG" "$PATH_NOEXT-1.$FILE_EXT"
+        mv "$RCLONE_LOG" "$PATH_NOEXT-1.$FILE_EXT"
 
     fi
 }
@@ -184,7 +184,7 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
             RCLONE_ARG=(
                 "move" "-vP"
                 "$PATH_FROM" "$PATH_TO"
-                #"--drive-service-account-file" "$ACCOUNT"
+                "--drive-service-account-file" "$ACCOUNT"
 
                 "--exclude" "*UNPACK*/**"
 
@@ -220,7 +220,7 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
         done
     fi
     
-    echo "$(date "+%Y/%m/%d %T") SCRIPT: Exiting.."
+    echo "$(date "+%Y/%m/%d %T") SCRIPT: Exiting.." | tee -a $RCLONE_LOG
 ) 200>$FLOCK_KEY
 
 # REF
