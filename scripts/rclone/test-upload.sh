@@ -83,7 +83,7 @@ rotate_log() {
 FLOCK_KEY="/var/lock/$(basename $0 .sh)"
 (
     # if already running then exit
-    flock -x -w 5 200 || exit 1
+    flock -x -w 5 200 || { echo "scripts in use"; exit 1; }
     
     # Rotate logs
     rotate_log
