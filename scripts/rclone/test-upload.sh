@@ -44,6 +44,7 @@ IGNORE_VERSION=false
 min_file_age() {
     echo "$(date "+%Y/%m/%d %T") SCRIPT: Looking for files older than 1 minute." | tee -a $RCLONE_LOG
     if find "$PATH_FROM" -type f -mmin +1 | read; then
+        echo "$(date "+%Y/%m/%d %T") SCRIPT: Found files that match criteria" | tee -a $RCLONE_LOG
         return 0
     fi
     echo "$(date "+%Y/%m/%d %T") SCRIPT: No files matching criteria" | tee -a $RCLONE_LOG
