@@ -43,7 +43,7 @@ IGNORE_VERSION=false
 # Minimum required age of files in order to upload
 min_file_age() {
     echo "$(date "+%Y/%m/%d %T") SCRIPT: Looking for files older than 1 minute." | tee -a $RCLONE_LOG
-    if find $PATH_FROM -type f -mmin +1 | read; then
+    if find "$PATH_FROM" -type f -mmin +1 | read; then
         return 0
     fi
     echo "$(date "+%Y/%m/%d %T") SCRIPT: No files matching criteria" | tee -a $RCLONE_LOG
