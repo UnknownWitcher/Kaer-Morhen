@@ -8,6 +8,9 @@ To do this I have setup some custom rules that can be enabled or disabled within
 
 At least thats the goal, this script as of right now is uploading files to my shared drives, I haven't had the chance to run into any of my rules so as of right now they're untested.
 
+### Manually Exit
+I needed a simple way to force this script to exit in the event of an issue, so to do that I decided to create a file in the same directory as the script and name it **__upload.exit__**, this will force the script to kill the rclone upload process (if running) and exit.
+
 ### Configuration
 
 `SA_JSON_FOLDER=""` this is the folder to your service accounts, which should all be json files.
