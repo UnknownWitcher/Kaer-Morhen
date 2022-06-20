@@ -1,60 +1,64 @@
 #!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/wc3/palert
+# -- Configuration -->
+
+# Service Account directory, this should only contain json files for SA)
+SA_JSON_FOLDER="/mnt/shared/config/rclone/sa"
+
+# Where to upload from, local path only
+RC_SOURCE=(
+    "/mnt/shared/fusemounts/local/Shows"
+    "/mnt/shared/fusemounts/local/Films"
+)
+# Where are we uploading to mount:folders
+RC_DESTINATION=(
+    "shows:Shows"
+    "films:Films"
+)
+
+# Rclone config; leave blank for default config path
+RC_CONFIG="/mnt/shared/config/rclone.conf"
+
+# RC MOVE ARGUMENTS
+RC_SETTINGS=(
+    #"--exclude" "*UNPACK*/**"
+
+    "--delete-empty-src-dirs"
+    "--fast-list"
+
+    "--max-transfer" "750G"
+    "--min-age" "1m"
+    "--bwlimit" "20M:5M"
+    "--drive-chunk-size" "64M"
+    "--tpslimit" "12"
+    "--tpslimit-burst" "12"
+    "--transfers" "2"
+)
+
+# Path to log file
+RC_LOG_FILE="/mnt/shared/logs/rclone/new-upload.log"
+
+# Type of logging you prefer
+RC_LOG_TYPE="-v"  # -v, -vv https://rclone.org/docs/#logging
+
+# Rclone trial run with no permanent changes
+# True = Enabled, False = Disabled
+RC_DRY_RUN=false # https://rclone.org/docs/#n-dry-run
+
+# Service Account rules - for switching SA's
+SA_RULES=(
+    "limit" 1                         # The maximum number of rules that need to apply before action is taken
+    "more_than_750" true              # Current SA has passed the daily upload quota
+    "user_rate_limit" true            # Rclone has prompted the rate limit error for current SA
+    "all_transfers_zero" true         # Current transfer size of all transfers is 0
+    "no_transfer_between_checks" true # The amount of transfers during 100 checks is 0
+)
+# <-- Configuration --
 FLOCK_KEY="/var/lock/$(basename $0 .sh)"
 (
-    # -- Configuration -->
-
-    # Service Account directory, this should only contain json files for SA)
-    SA_JSON_FOLDER="/mnt/shared/config/rclone/sa"
-
-    # Where to upload from, local path only
-    RC_SOURCE=(
-        "/mnt/shared/fusemounts/local/Shows"
-        "/mnt/shared/fusemounts/local/Films"
-    )
-    # Where are we uploading to mount:folders
-    RC_DESTINATION=(
-        "shows:Shows"
-        "films:Films"
-    )
-
-    # Rclone config; leave blank for default config path
-    RC_CONFIG="/mnt/shared/config/rclone.conf"
-
-    # RC MOVE ARGUMENTS
-    RC_SETTINGS=(
-        #"--exclude" "*UNPACK*/**"
-
-        "--delete-empty-src-dirs"
-        "--fast-list"
-
-        "--max-transfer" "750G"
-        "--min-age" "1m"
-        "--bwlimit" "20M:5M"
-        "--drive-chunk-size" "64M"
-        "--tpslimit" "12"
-        "--tpslimit-burst" "12"
-        "--transfers" "2"
-    )
-
-    # Path to log file
-    RC_LOG_FILE="/mnt/shared/logs/rclone/new-upload.log"
-
-    # Type of logging you prefer
-    RC_LOG_TYPE="-v"  # -v, -vv https://rclone.org/docs/#logging
-
-    # Rclone trial run with no permanent changes
-    # True = Enabled, False = Disabled
-    RC_DRY_RUN=false # https://rclone.org/docs/#n-dry-run
-
-    # Service Account rules - for switching SA's
-    SA_RULES=(
-        "limit" 1                         # The maximum number of rules that need to apply before action is taken
-        "more_than_750" true              # Current SA has passed the daily upload quota
-        "user_rate_limit" true            # Rclone has prompted the rate limit error for current SA
-        "all_transfers_zero" true         # Current transfer size of all transfers is 0
-        "no_transfer_between_checks" true # The amount of transfers during 100 checks is 0
-    )
-    # <-- Configuration --
+    
+    flock -x -w 5 200 || { echo "scripts in use"; exit 1; }
+    
     # -- Functions -->
     # Get next service account from path
     get_next_sa() { # works
