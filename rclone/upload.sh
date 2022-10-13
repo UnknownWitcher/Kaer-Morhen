@@ -52,9 +52,14 @@ SA_RULES=(
     "all_transfers_zero" true         # Current transfer size of all transfers is 0
     "no_transfer_between_checks" true # The amount of transfers during 100 checks is 0
 )
+
+# Wait between rclone checks
+CHECK_AFTER_START=60 # Wait X seconds after rclone has started
+CHECK_INTERVAL=60    # Check rclone stats every x seconds
+
 # <-- Configuration --
 OLD_UMASK=$(umask)
-umask 002
+umask 002 > /dev/null 2>&1
 FLOCK_KEY="/var/lock/$(basename $0 .sh)"
 (
     
@@ -160,7 +165,7 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
             exit 1
         fi
         
-        local database="./uploaded.db"
+        local database="$(dirname -- "$0")/uploaded.db"
 
         local TABLE=$(sqlite3 "$database" "CREATE TABLE IF NOT EXISTS config (id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL);" 2>&1)
         
@@ -420,10 +425,7 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
     if [[ ! -f $LAST_SA ]]; then
         LAST_SA=""
     fi
-    # Wait between rclone checks
-    CHECK_AFTER_START=60 # Wait X seconds after rclone has started
-    CHECK_INTERVAL=60    # Check rclone stats every x seconds
-
+    
     # Rotate logs if needed
     rotate_logs
 
@@ -607,4 +609,4 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
     done
 ) 200>$FLOCK_KEY
 # <-- Main --
-umask $OLD_UMASK
+umask $OLD_UMASK > /dev/null 2>&1
