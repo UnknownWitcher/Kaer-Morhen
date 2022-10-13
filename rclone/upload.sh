@@ -53,6 +53,8 @@ SA_RULES=(
     "no_transfer_between_checks" true # The amount of transfers during 100 checks is 0
 )
 # <-- Configuration --
+OLD_UMASK=$(umask)
+umask 002
 FLOCK_KEY="/var/lock/$(basename $0 .sh)"
 (
     
@@ -428,12 +430,18 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
     # Switching SA Accounts
     i=0
     while :; do
-        echo "Selecting Service Account........" | log_handler 
-        echo "Last SA: $LAST_SA" | log_handler 
+        if [["$RC_LOG_TYPE" == "-vv"]]; then
+            echo "Selecting Service Account........" | log_handler 
+            echo "Last SA: $LAST_SA" | log_handler 
+        fi
+        
         SA_NOW=$(get_next_sa $LAST_SA)
         LAST_SA="$SA_NOW"
-        echo "Now SA: $SA_NOW" | log_handler 
-
+        
+        if [["$RC_LOG_TYPE" == "-vv"]]; then
+            echo "Now SA: $SA_NOW" | log_handler 
+        fi
+        
         if [[ ! -f "$SA_NOW" ]]; then # works
             echo "File missing '$SA_NOW'" | log_handler "warning"
 
@@ -459,7 +467,9 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
             rclone ${RC_ARG[@]} &
 
             # Wait for rclone
-            echo "Waiting $CHECK_AFTER_START seconds for rclone command: ${RC_ARG[@]}" | log_handler
+            if [["$RC_LOG_TYPE" == "-vv"]]; then
+                echo "Waiting $CHECK_AFTER_START seconds for rclone command: ${RC_ARG[@]}" | log_handler
+            fi
             sleep $CHECK_AFTER_START
             
             # Get this rclone PID
@@ -497,12 +507,14 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
                             echo "$ERR_MSG rclone process still exists, killing process id '$PID'" | log_handler "error"
                             rclone_pid kill $PID
                         fi
-                        echo "Too many failed attempts.." | log_handler "error"
+                        if [["$RC_LOG_TYPE" == "-vv"]]; then
+                            echo "Too many failed attempts.." | log_handler "error"
+                        fi
                         break 1
                     fi
-
-                    echo "$ERR_MSG Waiting $CHECK_INTERVAL seconds to recheck." | log_handler "warning"
-
+                    if [["$RC_LOG_TYPE" == "-vv"]]; then
+                        echo "$ERR_MSG Waiting $CHECK_INTERVAL seconds to recheck." | log_handler "warning"
+                    fi
                     sleep $CHECK_INTERVAL
 
                     continue
@@ -595,3 +607,4 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
     done
 ) 200>$FLOCK_KEY
 # <-- Main --
+umask $OLD_UMASK
