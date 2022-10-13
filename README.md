@@ -1,12 +1,24 @@
 # Kaer-Morhen
 Personal scripts that I am using/working on.
 
+**My OS:** Ubuntu 22.04.1 LTS
+
 ### /rclone/upload.sh
 The goal of this script was to have something that automatically switches between service accounts to avoid google errors/limitation such as the user rate limit or when it reaches the 750GB limit.
 
 To do this I have setup some custom rules that can be enabled or disabled within the configuration section, if a rule has been triggered and it's enabled, then it will kill the current upload session and switch to another service account.
 
 At least thats the goal, this script as of right now is uploading files to my shared drives, I haven't had the chance to run into any of my rules so as of right now they're untested.
+
+### Requirements
+
+**rclone** - `https://rclone.org/install`
+
+**jq** - `sudo apt install -y jq`
+
+**sqlite3** - `sudo apt install -y sqlite3`
+
+**awk** - `sudo apt install -y awk`
 
 ### Force Exit
 I needed a simple way to force this script to exit in the event of an issue, so to do that I decided to create a file in the same directory as the script and name it **__upload.exit__**, this will force the script to kill the rclone upload process (if running) and exit.
@@ -61,8 +73,6 @@ Both the source and destination must contain the same amount of values, so if yo
 
 ### `SA_RULES` **untested**
 
-In this script I have all the rules set to true with the limit set to 1, this is something that really needs tested, however, I wont be able to test the 750G rule for another 2 weeks and have yet to run into any other issues in order to get these triggred.
-
 `"limit" 1` how many rules have to be triggered before we switch to another service account, default 1.
 
 `"more_than_750" false` When daily 750G limit is reached, **default false**.
@@ -73,3 +83,4 @@ In this script I have all the rules set to true with the limit set to 1, this is
 
 `"no_transfer_between_checks" true` When the amount of transfers after 100 checks is 0 **default true**.
 
+>On my server I have all the rules set to true with the limit set to 1, the idea is that once a limitation is triggered, the script will kill the current rclone process and switch to a new service account, however I've not ran into any limitations. I don't know if this is a good thing, I suspect this would need tested by someone who uploads more than myself. so for now this will remain as untested.
