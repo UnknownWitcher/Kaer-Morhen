@@ -27,18 +27,18 @@ RC_SETTINGS=(
 
     "--max-transfer" "750G"
     "--min-age" "1m"
-    "--bwlimit" "20M:5M"
+    #"--bwlimit" "20M:5M"
     "--drive-chunk-size" "64M"
     "--tpslimit" "12"
     "--tpslimit-burst" "12"
-    "--transfers" "2"
+    "--transfers" "6"
 )
 
 # Path to log file
 RC_LOG_FILE="/mnt/shared/logs/rclone/new-upload.log"
 
-# Type of logging you prefer
-RC_LOG_TYPE="-v"  # -v, -vv https://rclone.org/docs/#logging
+# Type of logging you prefer, leave blank for default
+RC_LOG_TYPE="-q"  # -q, -v, -vv https://rclone.org/docs/#logging
 
 # Rclone trial run with no permanent changes
 # True = Enabled, False = Disabled
