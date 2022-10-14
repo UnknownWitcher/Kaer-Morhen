@@ -100,7 +100,7 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
         fi
         local LOG_MSG=""
         while read INPUTLINE; do
-            LOG_MSG="$(date "+%Y/%m/%d %T") $LOG_TYPE  : $INPUTLINE"
+            LOG_MSG="$(date "+%Y/%m/%d %T") $LOG_TYPE: $INPUTLINE"
             if [[ -n "$RC_LOG_FILE" ]]; then
                 echo "$LOG_MSG" | tee -a $RC_LOG_FILE
             else
@@ -376,13 +376,13 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
     fi
 
     # Validate Log and Log Type
-    if [[ "${RC_SETTINGS[@]}" != *"-vv"* ]]; then
-        if [[ "${RC_SETTINGS[@]}" != *"-v"* ]]; then
-            if [[ ! -n $RC_LOG_TYPE ]]; then
-                RC_LOG_TYPE=("-v")
-            fi
-        fi
-    fi
+    #if [[ "${RC_SETTINGS[@]}" != *"-vv"* ]]; then
+    #    if [[ "${RC_SETTINGS[@]}" != *"-v"* ]]; then
+    #        if [[ ! -n $RC_LOG_TYPE ]]; then
+    #            RC_LOG_TYPE=("-v")
+    #        fi
+    #    fi
+    #fi
     if [[ "${RC_SETTINGS[@]}" != *"--log-file"* ]]; then
         if [[ -n $RC_LOG_FILE ]]; then
             RC_SETTINGS+=("--log-file" "$RC_LOG_FILE")
@@ -462,7 +462,9 @@ FLOCK_KEY="/var/lock/$(basename $0 .sh)"
         
             RC_ARGUMENTS=("move" $RC_LOG_TYPE "${RC_SOURCE[$j]}" "${RC_DESTINATION[$j]}" ${RC_SETTINGS[@]})
             let j=j+1
-
+            
+            find "${RC_SOURCE[$j]}" -mtime -0 -exec touch {} \;
+            
             RC_ARG=(${RC_ARGUMENTS[@]} "--drive-service-account-file" "$SA_NOW")
             
             # Run rclone independently
