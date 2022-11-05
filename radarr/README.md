@@ -2,9 +2,9 @@
 
 ### Requirements
 
-**jq** - `sudo apt install jq`
+**jq** - `sudo apt install jq` - current version tested: 1.6
 
-**curl** - `sudo apt install curl`
+**curl** - `sudo apt install curl` - current version tested: 7.68.0
 
 ### Configuration
 
