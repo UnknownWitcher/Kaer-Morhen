@@ -56,7 +56,7 @@ If 1,000 movies are going to be untagged but 300 of them are in a different root
 
 The reason for this is so that the script can update the movie folders, it does this by telling radarr to move your existing movies (that are being untagged) to the same root path that they already exist in, this doesn't move anything it just tricks radarr into renaming their folders. [Thanks to trash guides for this](https://trash-guides.info/Radarr/Tips/Radarr-rename-your-folders/).
 
-**LASTLY**
+**OTHER API STUFF**
 
 The script will attempt to create the `RADARR_TAG` if it does not exist and then grabs the tags ID, this occurs once per script, so a normal run, whether we're tagging or untagging, assuming we're only dealing with one root folder, means there will be up to 3 api calls each time the script runs.
 
