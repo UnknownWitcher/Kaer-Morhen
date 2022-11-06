@@ -1,5 +1,7 @@
 # handle-unreleased.sh
 
+![unreelaseed](https://user-images.githubusercontent.com/82295355/200149523-4381f763-e0ae-4319-8532-6158c59ce391.gif)
+
 ### Requirements
 
 **jq** - `sudo apt install jq` - current version tested: 1.6
@@ -62,4 +64,4 @@ The script will attempt to create the `RADARR_TAG` if it does not exist and then
 
 ### Final thoughts
 
-I will continue to try and find ways to improve this script, as a fun yet terrifying experiment I decided to tag all of my movies `3255` and run the script manually, the initial api call to get all the movies took about 10 seconds and then the entire process of checking each movie took about 5 minutes before making two api calls to radarr in order to untag and rename my folders, thankfully none of my folders needed renaming but I wanted to see how well this worked. I also forgot that I have `2014` movies marked as unmonitored, so only `1241` movies went through the entire process.
+I will continue to try and find ways to improve this script, as a fun yet terrifying experiment I decided to tag all of my movies `3255` and run the script manually, the initial api call to get all the movies took about 9 seconds and then the entire process of checking each movie took about 14m35s before making two api calls to radarr in order to untag and rename my folders (estimate 6s to complete), thankfully none of my folders needed renaming but I wanted to see how well this worked. I also forgot that I have `2014` movies marked as unmonitored, so only `1241` movies went through the entire checking process.
