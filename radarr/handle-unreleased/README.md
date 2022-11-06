@@ -1,6 +1,8 @@
 # handle-unreleased.sh
 
-![unreelaseed](https://user-images.githubusercontent.com/82295355/200149523-4381f763-e0ae-4319-8532-6158c59ce391.gif)
+![tagging movies](https://user-images.githubusercontent.com/82295355/200149523-4381f763-e0ae-4319-8532-6158c59ce391.gif)
+
+![untagging movies](https://user-images.githubusercontent.com/82295355/200166486-8223183a-c5ff-461b-ac85-de5334203201.gif)
 
 ### Requirements
 
