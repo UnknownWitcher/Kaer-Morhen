@@ -36,7 +36,7 @@ The script performs three checks to determin if the movie should be tagged.
 
 3. Is the release date before or after `MAX_AVAILABILITY` date? if it's after then we tag it.
 
-`MAX_AVAILABILITY="6 month"` - As I am writing this it is Nov 5th 2022, in 6 months it will be `Fri 05 May 2023`.
+`MAX_AVAILABILITY="2 month"` - As I am writing this it is Nov 6th 2022, in 6 months it will be `Fri 6 January 2023`, if I use this value, then any movie after that date will be tagged.
 
 #### RADARR API HANDLING
 
@@ -60,8 +60,8 @@ The reason for this is so that the script can update the movie folders, it does 
 
 **OTHER API STUFF**
 
-The script will attempt to create the `RADARR_TAG` if it does not exist and then grabs the tags ID, this occurs once per script, so a normal run, whether we're tagging or untagging, assuming we're only dealing with one root folder, means there will be up to 3 api calls each time the script runs.
+The script will attempt to create the `RADARR_TAG` if it does not exist and then grabs the tags ID, this always occurs in a new instance of the script, so a normal run, whether we're tagging or untagging (assuming we're only dealing with one root folder), means there will be up to 3 api calls each time the script runs.
 
 ### Final thoughts
 
-I will continue to try and find ways to improve this script, as a fun yet terrifying experiment I decided to tag all of my movies `3255` and run the script manually, the initial api call to get all the movies took about 9 seconds and then the entire process of checking each movie took about 14m35s before making two api calls to radarr in order to untag and rename my folders (estimate 6s to complete), thankfully none of my folders needed renaming but I wanted to see how well this worked. I also forgot that I have `2014` movies marked as unmonitored, so only `1241` movies went through the entire checking process.
+I will continue to try and find ways to improve this script. As a fun yet terrifying experiment I decided to tag all of my movies `3255` and run the script manually, the initial api call to get all the movies took about 9 seconds and then the entire process of checking each movie took about 14m35s before making two api calls to radarr in order to untag and rename my folders (estimate 6s to complete). I wanted to see how well this worked. I also forgot that I have `2014` movies marked as unmonitored, so only `1241` movies went through the entire checking process.
