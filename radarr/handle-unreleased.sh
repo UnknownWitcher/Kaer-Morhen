@@ -9,7 +9,7 @@ RADARR_URL="https://address:port"
 # Custom radarr tag, it will be created if it does not exist.
 RADARR_TAG="unreleased"
 # This is a range between now and [n] day/month/year(s) from now.
-MAX_AVAILABILITY="6 month" # '-[n] day|month|year'
+MAX_AVAILABILITY="2 month" # '-[n] day|month|year'
 LOG_PATH="" # leave empty to disable logging.
 #
 # FUNCTIONS - DO NOT EDIT BELOW
