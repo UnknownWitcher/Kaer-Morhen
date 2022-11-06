@@ -16,15 +16,15 @@
 
 **RADARR_TAG** - I use `unreleased` for my tag, but set this to whatever you prefer.
 
-**MAX_AVAILABILITY** - This creates a date X day/month/year(s) into the future, any release date beyond this date, will be tagged.
+**MAX_AVAILABILITY** - This creates a date X day/month/year(s) into the future, any release date beyond this date will be tagged.
 
-**LOG_PATH** - Radarr handles errors for the script under `System > Events` and they can log the scripts output when debug is enabled, leaving this blank wont stop the script from printing, it just wont store the information in a log.
+**LOG_PATH** - Radarr handles errors for the script under `System > Events` and they can log the scripts output when debug is enabled, leaving this blank won't stop the script from printing this information to console, it just wont store the information in its log.
 
 ### Adding this script to radarr
 
-Once you have saved the script as `scriptname.sh` where scriptname is whatever you want to call it and you've configured the settings, you want to go to Radarr `Settings > Connect`, click the plus icon and then choose `Custom Script`.
+Go to Radarr `Settings > Connect` and click the plus icon, then select `Custom Script`. Ignore the "Disabled" label, the script still functions, I can only assume this is a bug.
 
-Uncheck everything except `On Movie Added`, then add the path to the script and Save it. Now it might say `Disabled` right beside `On Movie Added` but this must be a bug as the script works.
+![handle-unreleased](https://user-images.githubusercontent.com/82295355/200163714-18e85c6f-a67c-4343-9cb7-989e3416bc37.jpg)
 
 ### How it works
 
