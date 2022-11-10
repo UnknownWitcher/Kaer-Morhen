@@ -1,7 +1,17 @@
 # handle-unreleased.sh
 
-![tagging movies](https://user-images.githubusercontent.com/82295355/200149523-4381f763-e0ae-4319-8532-6158c59ce391.gif)
+### What is this??
+This script updates movie folders when we get closer to their release date, this is adjusted in the configuration section of the script. The reason we do this is because radarr does not automatically correct folder names for movies that do not have a year because they've just been announced, we also have issues with movies that do not have an official name yet. So we could end up with movie folders that look like this.
+```
+/I Am Legend 2 () [tmdb-945956]/
 
+/Avatar 5 (2028) [tmdb-393209]/
+
+/Untitled Ghostbusters - Afterlife Sequel (2023) [tmdb-967847]/
+```
+### How movies are tagged using this script
+![tagging movies](https://user-images.githubusercontent.com/82295355/200149523-4381f763-e0ae-4319-8532-6158c59ce391.gif)
+### How movies are untagged using this script
 ![untagging movies](https://user-images.githubusercontent.com/82295355/200166486-8223183a-c5ff-461b-ac85-de5334203201.gif)
 
 ### Requirements
@@ -38,7 +48,7 @@ The script performs three checks to determin if the movie should be tagged.
 
 3. Is the release date before or after `MAX_AVAILABILITY` date? if it's after then we tag it.
 
-`MAX_AVAILABILITY="2 month"` - As I am writing this it is Nov 6th 2022, in 6 months it will be `Fri 6 January 2023`, if I use this value, then any movie after that date will be tagged.
+`MAX_AVAILABILITY="2 month"` - As I am writing this it is Nov 6th 2022, in 2 months it will be `Fri 6 January 2023`, if I use this value, then any movie that is released after that date will be tagged, if you run the script outside of radarr (i.e manually, cron) and the movie is release before that date, then it will be untagged and it's folder will be updated.
 
 #### RADARR API HANDLING
 
