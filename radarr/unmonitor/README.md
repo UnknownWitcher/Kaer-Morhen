@@ -16,4 +16,5 @@ This script will automatically unmonitor a movie once the movie has been downloa
 ### Adding this script to radarr
 
 Go to Radarr `Settings > Connect` and click the plus icon, then select `Custom Script`.
+
 ![image](https://user-images.githubusercontent.com/82295355/203098219-b837bcf9-1bdb-49db-8c2d-425e125d8ea1.png)
