@@ -15,7 +15,7 @@ SERVICE_ACC="/docker/scripts/SAs"
 SERVICE_SWICHER="dropbox" # dropbox | google
 
 # log settings
-LOG_PATH="/data/logs"
+LOG_PATH="/media/logs"
 LOG_TYPE="-vv"    # blank for notice|-v for info|-vv to debug|-q for errors only
 LOG_SIZE=1000     # KB (1MB)
 LOG_LIMIT=1       # How many log files should be kept.
