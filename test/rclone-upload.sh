@@ -2,20 +2,20 @@
 # CONFIG - Alpha-v0.5
 #
 # path settings
-PATH_SOURCE="/media/mergerfs/local/media/"
-PATH_TARGET="<censored>encrypted:/media/"
-PATH_CONFIG="/home/<user>/.config/rclone/rclone.conf"
+PATH_SOURCE="/data/upload"
+PATH_TARGET="billy_gdrive_encrypted:/media/"
+PATH_CONFIG="/home/aniel/.config/rclone/rclone.conf"
 # Filters
 MIN_FILES_TO_UPLOAD=1
 MIN_FILE_AGE_MINUTES=1
 IGNORE_FOLDERS=("unpack")
 
 # service settings
-SERVICE_ACC="/docker/scripts/SAs"
+SERVICE_ACC="/data/SAs"
 SERVICE_SWICHER="dropbox" # dropbox | google
 
 # log settings
-LOG_PATH="/media/logs"
+LOG_PATH="/data/logs"
 LOG_TYPE="-vv"    # blank for notice|-v for info|-vv to debug|-q for errors only
 LOG_SIZE=1000     # KB (1MB)
 LOG_LIMIT=1       # How many log files should be kept.
@@ -71,28 +71,7 @@ flock() { #160223-1
 log() { # 240223-1
     local type_id message script_source err_msg
     type_id="${1}"; script_source="${BASH_SOURCE[0]}"
-    if [[ -z "${LOG_ONE_TIME_TEST}" ]]; then
-        if [[ -n "$LOG_PATH" ]]; then
-            if [[ "$LOG_PATH" == "${LOG_PATH#*.}" ]]; then
-                if [[ "$LOG_PATH" == "/" ]]; then
-                    LOG_PATH="./"
-                fi
-                LOG_PATH="${LOG_PATH%/}/$(basename "${script_source}" .sh).log"
-            fi
-            if [[ ! -d "$(dirname -- "$LOG_PATH")" ]]; then
-                if ! mkdir "$(dirname -- "$LOG_PATH")" > /dev/null 2>&1; then
-                    err_msg="Failed to create log path '$(dirname -- "$LOG_PATH")'"
-                fi
-                if [[ ! -d "$(dirname -- "$LOG_PATH")" ]]; then
-                    LOG_PATH="$(dirname -- "${script_source}")/$(basename "${script_source}" .sh).log"
-                    printf "%s\n" "${err_msg}" | tee -a "${LOG_PATH}"
-                fi
-            fi
-        else
-            LOG_PATH="$(dirname -- "${script_source}")/$(basename "${script_source}" .sh).log"
-        fi
-    fi
-    if [[ "${LOG_TYPE}" == "-q" && "${type_id}" != "error" ]]; then return 0; fi
+    if [[ "${LOG_TYPE}" == "-q" && "${type_id}" != "error" && "${type_id}" != "onetimerun" ]]; then return 0; fi
     case "${type_id}" in
         debug)
             if [[ "$LOG_TYPE" != "-vv" ]]; then return 0; fi
@@ -110,6 +89,28 @@ log() { # 240223-1
         info)
             if [[ "${LOG_TYPE}" != "-v" && "${LOG_TYPE}" != "-vv" ]]; then return 0; fi
             type_id="INFO  "
+            ;;
+        onetimerun)
+            if [[ -n "$LOG_PATH" ]]; then
+                if [[ "$LOG_PATH" == "${LOG_PATH#*.}" ]]; then
+                    if [[ "$LOG_PATH" == "/" ]]; then
+                        LOG_PATH="./"
+                    fi
+                    LOG_PATH="${LOG_PATH%/}/$(basename "${script_source}" .sh).log"
+                fi
+                if [[ ! -d "$(dirname -- "$LOG_PATH")" ]]; then
+                    if ! mkdir "$(dirname -- "$LOG_PATH")" > /dev/null 2>&1; then
+                        err_msg="Failed to create log path '$(dirname -- "$LOG_PATH")'"
+                    fi
+                    if [[ ! -d "$(dirname -- "$LOG_PATH")" ]]; then
+                        LOG_PATH="$(dirname -- "${script_source}")/$(basename "${script_source}" .sh).log"
+                        printf "%s\n" "${err_msg}" | tee -a "${LOG_PATH}"
+                    fi
+                fi
+            else
+                LOG_PATH="$(dirname -- "${script_source}")/$(basename "${script_source}" .sh).log"
+            fi
+            return 0
             ;;
         *)
             type_id="NOTICE"
@@ -131,7 +132,6 @@ log() { # 240223-1
             printf "%s\n" "no-log: ${message}"
         fi
     done
-    LOG_ONE_TIME_TEST=true
 }
 log_rotate() { #240223-1
     local max_size get_name path_noext file_ext remove_oldest file_path
@@ -510,7 +510,7 @@ run_rclone() { # 240223-0
         if [[ -z "${pid}" ]]; then
             if [[ ${is_active} == false ]]; then
                 if [[ ${retries} -gt 0 ]]; then
-                    printf "%s\n" "Rclone not running.. ,attempt ${retries}/15" | log debug
+                    printf "%s\n" "Rclone not running.. attempt ${retries}/15" | log debug
                 fi
                 if [[ ${retries} -ge 15 ]]; then
                     printf "%s\n" "Rclone failed to start.." | log debug
@@ -539,6 +539,7 @@ flock "rclone_upload"
 trap 'safely_exit 0' SIGTERM SIGINT
 ((LOG_SIZE=LOG_SIZE*1000))
 SWITCH_SERVICE_ACCOUNT=false
+log onetimerun
 rclone_clean_settings
 while :; do
     stop_file_exists
