@@ -2,20 +2,20 @@
 # CONFIG - Alpha-v0.5
 #
 # path settings
-PATH_SOURCE="/data/upload"
-PATH_TARGET="billy_gdrive_encrypted:/media/"
-PATH_CONFIG="/home/aniel/.config/rclone/rclone.conf"
+PATH_SOURCE="/<your upload path>"
+PATH_TARGET="/<your drive path>"
+PATH_CONFIG="/<your config path>/rclone.conf"
 # Filters
 MIN_FILES_TO_UPLOAD=1
 MIN_FILE_AGE_MINUTES=1
 IGNORE_FOLDERS=("unpack")
 
 # service settings
-SERVICE_ACC="/data/SAs"
-SERVICE_SWICHER="dropbox" # dropbox | google
+SERVICE_ACC="/<path to service account folder>"
+SERVICE_SWICHER="google" # dropbox | google
 
 # log settings
-LOG_PATH="/data/logs"
+LOG_PATH="/media/logs"
 LOG_TYPE="-vv"    # blank for notice|-v for info|-vv to debug|-q for errors only
 LOG_SIZE=1000     # KB (1MB)
 LOG_LIMIT=1       # How many log files should be kept.
