@@ -397,7 +397,7 @@ rclone_clean_settings() { #190223-0
         tmp_array+=("--dry-run")
     fi
     RCLONE_SETTINGS=(
-        "move" "${PATH_TARGET}" "${PATH_SOURCE}"
+        "move" "${PATH_SOURCE}" "${PATH_TARGET}"
         "${tmp_array[@]}"
         "--log-file" "${LOG_PATH}"
         "--rc" "${RCLONE_REMOTE[@]}"
