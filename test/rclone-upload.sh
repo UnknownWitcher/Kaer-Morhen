@@ -378,7 +378,7 @@ rclone_clean_settings() { #190223-0
         fi
     done
     if [[ -n ${PATH_CONFIG} ]]; then
-        if ! [[ -f ${PATH_CONFIG} ]]; then
+        if [[ -f ${PATH_CONFIG} ]]; then
             tmp_array+=("--config" "${PATH_CONFIG}")
         else
             printf "%s\n" "Custom rclone config '${PATH_CONFIG}' is missing" | log error
