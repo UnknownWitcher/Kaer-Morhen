@@ -1,5 +1,5 @@
 #!/bin/bash
-# CONFIG - Alpha-v0.5
+# CONFIG - Alpha-v1
 #
 # path settings
 PATH_SOURCE="/<your upload path>"
