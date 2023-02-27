@@ -1,5 +1,5 @@
 #!/bin/bash
-# CONFIG - Alpha-v1
+# CONFIG - Alpha-v1.2
 #
 # path settings
 PATH_SOURCE="/<your upload path>"
@@ -496,7 +496,7 @@ monitor_source_folder() { # 230223-0
     done
     return 0
 }
-run_rclone() { # 240223-0
+run_rclone() { # 240223-1
     local pid is_active retries rstats
     printf "%s\n" "Starting rclone with the following configuration." | log debug
     printf "%s\n" "$*" | log debug
@@ -527,6 +527,10 @@ run_rclone() { # 240223-0
         if service_account_switch; then
             printf "%s\n" "Enabled Switching Service Accounts" | log debug
             SWITCH_SERVICE_ACCOUNT=true
+            pid="$(rclone_api pid)"
+            if [[ -n "${pid}" ]]; then
+                rclone_api quit
+            fi
             break
         fi
         is_active=true
