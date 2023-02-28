@@ -271,7 +271,7 @@ service_account_switch() { # 190223-1
         printf "%s\n" "'Service account switcher' requires google services" | log debug
         return 1
     fi
-    results="$(rclone_api stats 2>&1)"
+    results="$(rclone_api stats)"
     if [[ $? -eq 1 ]]; then safely_exit 1; fi
     if rclone_try_catch "${results}"; then safely_exit 1; fi
     cnt_transfer="$(printf "%s\n" "${results}" | jq '.bytes')"
@@ -281,8 +281,7 @@ service_account_switch() { # 190223-1
     if [[ $cnt_transfer -gt $((${MONITOR_MAX_TRANSFER%G}*1000**3)) ]]; then
         message="Reached max-transfer limit"
     elif [[ -n "${error_user_rate_limit}" ]]; then
-        if [[ -n "${message}" ]]; then message+=", "; fi
-        message+="user_rate_limit error"
+        message="user_rate_limit error"
     else
         return 1
     fi
