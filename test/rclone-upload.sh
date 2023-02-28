@@ -264,7 +264,7 @@ service_account_cache() { #190223-1
     printf "%s\n" "${index}" | tee "${cache_file}"
     return 0
 }
-service_account_switch() { # 190223-2
+service_account_switch() { # 190223-1
     local message cnt_transfer error_user_rate_limit rclone_arg results
     printf "%s\n" "Running 'service account switcher'" | log debug
     if [[ "${SERVICE_SWICHER}" != "google" ]]; then
@@ -272,8 +272,7 @@ service_account_switch() { # 190223-2
         return 1
     fi
     results="$(rclone_api stats)"
-    if [[ $? -eq 1 ]]; then safely_exit 1; fi
-    if rclone_try_catch "${results}"; then return 1; fi
+    if [[ $? -eq 1 ]]; then return 1; fi
     cnt_transfer="$(printf "%s\n" "${results}" | jq '.bytes')"
     error_user_rate_limit="$(printf "%s\n" "${results}" | jq '.lastError' | grep "userRateLimitExceeded")"
     if [[ -z "${MONITOR_MAX_TRANSFER}" ]]; then MONITOR_MAX_TRANSFER=750; fi
