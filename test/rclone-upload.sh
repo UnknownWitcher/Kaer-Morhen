@@ -272,6 +272,7 @@ service_account_switch() { # 190223-1
         return 1
     fi
     results="$(rclone_api stats)"
+    printf "%s\n" "${results}" | tee -a "/media/logs/rclonestats.log" > /dev/null 2>&1
     if [[ $? -eq 1 ]]; then return 1; fi
     cnt_transfer="$(printf "%s\n" "${results}" | jq '.bytes')"
     error_user_rate_limit="$(printf "%s\n" "${results}" | jq '.lastError' | grep "userRateLimitExceeded")"
