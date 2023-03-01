@@ -272,7 +272,7 @@ service_account_switch() { # 190223-1
         return 1
     fi
     results="$(rclone_api stats)"
-    printf "%s\n" "${results}" | tee -a "/media/logs/rclonestats.log" > /dev/null 2>&1
+    #printf "%s\n" "${results}" | tee -a "/media/logs/rclonestats.log" > /dev/null 2>&1
     if [[ $? -eq 1 ]]; then return 1; fi
     cnt_transfer="$(printf "%s\n" "${results}" | jq '.bytes')"
     error_user_rate_limit="$(printf "%s\n" "${results}" | jq '.lastError' | grep "userRateLimitExceeded")"
@@ -290,7 +290,7 @@ service_account_switch() { # 190223-1
 }
 rclone_api() { # 230223-1
     local self rclone_arg results accepted_vars
-    printf "%s\n" "Running 'rclone api ${1}'" | log debug
+    #printf "%s\n" "Running 'rclone api ${1}'" | log debug
     self="${1}"
     accepted_vars="pid quit stats"
     if [[ "${accepted_vars}" != *"${self}"* ]]; then
@@ -420,7 +420,6 @@ event_exit() { #190223-0
 }
 stop_file_exists() { #190223-0
     local exit_file="$(basename "${BASH_SOURCE[0]}" .sh).exit"
-    printf "%s\n" "Running 'stop file exists'" | log debug
     if [[ -f "$(dirname -- "$(realpath "${BASH_SOURCE[0]}")")/${exit_file}" ]]; then
         printf "%s\n" "'${exit_file}' was detected." | log debug
         safely_exit 0
@@ -504,7 +503,7 @@ run_rclone() { # 240223-1
     is_active=false
     while :; do
         stop_file_exists
-        sleep 1
+        #sleep 1
         pid="$(rclone_api pid)"
         if [[ -z "${pid}" ]]; then
             if [[ ${is_active} == false ]]; then
@@ -526,10 +525,6 @@ run_rclone() { # 240223-1
         if service_account_switch; then
             printf "%s\n" "Enabled Switching Service Accounts" | log debug
             SWITCH_SERVICE_ACCOUNT=true
-            pid="$(rclone_api pid)"
-            if [[ -n "${pid}" ]]; then
-                rclone_api quit
-            fi
             break
         fi
         is_active=true
