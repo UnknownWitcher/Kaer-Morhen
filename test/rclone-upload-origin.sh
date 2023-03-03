@@ -412,9 +412,6 @@ rclone_clean_settings() { #190223-2
         fi
         tmp_array+=("--exclude" "'*${IGNORE_FOLDERS[$i]}*/**'")
     done
-    if [[ "${SERVICE_SWICHER}" == "google" ]]; then
-        tmp_array+=("--drive-stop-on-upload-limit")
-    fi
     if [[ ${RCLONE_TEST} == true ]]; then
         tmp_array+=("--dry-run")
     fi
@@ -431,7 +428,6 @@ rclone_clean_settings() { #190223-2
         "move" "${PATH_SOURCE}" "${PATH_TARGET}"
         "${tmp_array[@]}"
         "--log-file" "${LOG_PATH}"
-        #"--low-level-retries" "2"
         "--rc" "${RCLONE_REMOTE[@]}"
     )
 }
@@ -456,7 +452,7 @@ stop_file_exists() { #190223-0
         safely_exit 0
     fi
 }
-run_service() { # 230223-1
+run_service() { # 030323-1
     local json_files current_account cache_account sacc rclone_arg
     case "${SERVICE_SWICHER}" in
         "google")
@@ -465,27 +461,21 @@ run_service() { # 230223-1
                 printf "%s\n" "Service accounts not found in '${SERVICE_ACC}'" | log error
                 safely_exit 1
             fi
-            UPLOAD_RETRIES_MAX=${#json_files[@]}
-            sacc=$(service_account_cache 0)
+            sacc=$(service_account_cache 0) # Gets current SA
             if [[ $? -eq 1 ]]; then safely_exit 1; fi
-            if [[ ${SWITCH_SERVICE_ACCOUNT} == true ]]; then
-                printf "%s\n" "Switching accounts.." | log debug
-                ((sacc=sacc+1))
-                if [[ ${sacc} -gt $((${#json_files[@]}-1)) ]]; then
-                    sacc=$(service_account_cache 0 save)
-                    if [[ $? -eq 1 ]]; then safely_exit 1; fi
-                else
-                    sacc=$(service_account_cache ${sacc} save)
-                    if [[ $? -eq 1 ]]; then safely_exit 1; fi
-                fi
-                SWITCH_SERVICE_ACCOUNT=false
-                printf "%s\n" "Disabled Switching Service Accounts" | log debug
-            fi
             current_account="${json_files[$sacc]}"
             printf "%s\n" "Service Account: ${current_account}" | log debug
             rclone_arg=("${RCLONE_SETTINGS[@]}" "--drive-service-account-file" "${current_account}")
             monitor_source_folder
             run_rclone "${rclone_arg[@]}"
+            ((sacc=sacc+1)) # Increment and save for next run
+            if [[ ${sacc} -gt $((${#json_files[@]}-1)) ]]; then
+                sacc=$(service_account_cache 0 save)
+                if [[ $? -eq 1 ]]; then echo "safely exit"; fi
+            else
+                sacc=$(service_account_cache ${sacc} save)
+                if [[ $? -eq 1 ]]; then echo "safely exit"; fi
+            fi
             if [[ $? -eq 1 ]]; then
                 safely_exit 1
             fi
