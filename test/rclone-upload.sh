@@ -27,7 +27,6 @@ RCLONE_SETTINGS=(
     "--delete-empty-src-dirs"
     "--fast-list"
     "--max-transfer" "750G"
-    "--min-age" "1m"
     "--drive-chunk-size" "128M"
     "--tpslimit" "12"
     "--tpslimit-burst" "12"
