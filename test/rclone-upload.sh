@@ -136,18 +136,17 @@ log() { # 240223-1
 log_rotate() { #240223-1
     local max_size get_name path_noext file_ext remove_oldest file_path
     file_path="${LOG_PATH}"
-    if [[ ! -f "${LOG_PATH}" ]]; then return 0; fi
     if [[ -z "${LOG_LIMIT}" ]]; then LOG_LIMIT=1; fi
-    if [[ $LOG_LIMIT -le 0 ]]; then return 0; fi
+    if [[ ${LOG_LIMIT} -le 0 ]]; then return 0; fi
     if [[ ! -f "${file_path}" ]]; then
         printf "%s\n" "log_rotate: Unable to find '${file_path}'" | log warn
         return 1
     fi
     max_size=1000000 #1MB
-    if [[ $LOG_SIZE -ge 10000 ]] && [[ $LOG_SIZE -le 5000000 ]]; then
-        max_size=$LOG_SIZE
+    if [[ ${LOG_SIZE} -ge 10000 ]] && [[ ${LOG_SIZE} -le 5000000 ]]; then
+        max_size=${LOG_SIZE}
     fi
-    if [[ $(stat -c%s "${file_path}" 2>/dev/null) -ge $max_size ]]; then
+    if [[ $(stat -c%s "${file_path}" 2>/dev/null) -ge ${max_size} ]]; then
         if [[ $LOG_LIMIT -le 1 ]]; then
             : > "${file_path}"
             return 0
@@ -264,20 +263,42 @@ service_account_cache() { #190223-1
     printf "%s\n" "${index}" | tee "${cache_file}"
     return 0
 }
-service_account_switch() { # 190223-1
-    local message cnt_transfer error_user_rate_limit rclone_arg results
+CNT_TRANSFER_LAST=0
+CNT_403_RETRY=0
+service_account_switch() { # 190223-2
+    local message cnt_transfer last_error rclone_arg results
     printf "%s\n" "Running 'service account switcher'" | log debug
     if [[ "${SERVICE_SWICHER}" != "google" ]]; then
         printf "%s\n" "'Service account switcher' requires google services" | log debug
         return 1
     fi
     results="$(rclone_api stats)"
-    #printf "%s\n" "${results}" | tee -a "/media/logs/rclonestats.log" > /dev/null 2>&1
     if [[ $? -eq 1 ]]; then return 1; fi
-    cnt_transfer="$(printf "%s\n" "${results}" | jq '.bytes')"
-    error_user_rate_limit="$(printf "%s\n" "${results}" | jq '.lastError' | grep "userRateLimitExceeded")"
     if [[ -z "${MONITOR_MAX_TRANSFER}" ]]; then MONITOR_MAX_TRANSFER=750; fi
+    cnt_transfer="$(printf "%s\n" "${results}" | jq '.bytes')"
     if [[ -z "${cnt_transfer}" ]]; then cnt_transfer=0; fi
+    last_error="$(printf "%s\n" "${results}" | jq '.lastError')"
+    if [[ -z "${last_error}" ]]; then last_error=""
+    else last_error="$(printf "%s\n" "${last_error}" | grep "userRateLimitExceeded")"; fi
+    if [[ ${cnt_transfer} -gt $((${MONITOR_MAX_TRANSFER%G}*1000**3)) ]]; then
+        message="Reached max-transfer limit"
+    elif [[ -n "${last_error}" ]]; then
+        message="user_rate_limit error"
+    elif [[ $((cnt_transfer-CNT_TRANSFER_LAST)) -eq 0 ]]; then
+        ((CNT_403_RETRY=CNT_403_RETRY+1))
+        if [[ $((CNT_403_RETRY%15)) -eq 0 ]]; then
+            printf "%s\n" "No transfers in ${CNT_403_RETRY} checks" | log warn
+        fi
+        if [[ ${CNT_403_RETRY} -ge 120 ]]; then
+            message="no transfers have occured in a long time"
+        else
+            return 1
+        fi
+    else
+        CNT_403_RETRY=0
+        CNT_TRANSFER_LAST=${cnt_transfer}
+        return 1
+    fi
     if [[ $cnt_transfer -gt $((${MONITOR_MAX_TRANSFER%G}*1000**3)) ]]; then
         message="Reached max-transfer limit"
     elif [[ -n "${error_user_rate_limit}" ]]; then
@@ -325,7 +346,7 @@ rclone_try_catch() { # 230223-1
             ;;
     esac
 }
-rclone_clean_settings() { #190223-0
+rclone_clean_settings() { #190223-2
     local tmp_array i ignore_case
     printf "%s\n" "Running rclone settings cleaner" | log debug
     if [[ -z "${PATH_TARGET}" || -z "${PATH_SOURCE}" ]]; then
@@ -340,7 +361,9 @@ rclone_clean_settings() { #190223-0
         if [[ "${RCLONE_SETTINGS[$i]}" == "--exclude" || \
                 "${RCLONE_SETTINGS[$i]}" == "--config" || \
                 "${RCLONE_SETTINGS[$i]}" == "--log-file" || \
-                "${RCLONE_SETTINGS[$i]}" == "--drive-service-account-file" ]]; then
+                "${RCLONE_SETTINGS[$i]}" == "--low-level-retries" || \
+                "${RCLONE_SETTINGS[$i]}" == "--drive-service-account-file" || \
+                "${RCLONE_SETTINGS[$i]}" == "--min-age" ]]; then
             ((i=i+1))
             continue
         fi
@@ -395,15 +418,22 @@ rclone_clean_settings() { #190223-0
     if [[ ${RCLONE_TEST} == true ]]; then
         tmp_array+=("--dry-run")
     fi
+    if ! [[ "${MIN_FILE_AGE_MINUTES}" =~ ^\-?[0-9]+$ ]]; then
+        MIN_FILE_AGE_MINUTES=0
+    fi
+    if [[ ${MIN_FILE_AGE_MINUTES} -gt 0 ]]; then
+        tmp_array+=("--min-age" "${MIN_FILE_AGE_MINUTES}m")
+    fi
+    if [[ -n "${LOG_TYPE}" ]]; then
+        tmp_array+=("${LOG_TYPE}")
+    fi
     RCLONE_SETTINGS=(
         "move" "${PATH_SOURCE}" "${PATH_TARGET}"
         "${tmp_array[@]}"
         "--log-file" "${LOG_PATH}"
+        "--low-level-retries" "2"
         "--rc" "${RCLONE_REMOTE[@]}"
     )
-    if [[ -n "${LOG_TYPE}" ]]; then
-        RCLONE_SETTINGS+=("${LOG_TYPE}")
-    fi
 }
 safely_exit() { # 230123-1
     local rclone_arg pid rquit exit_code
@@ -420,6 +450,7 @@ event_exit() { #190223-0
 }
 stop_file_exists() { #190223-0
     local exit_file="$(basename "${BASH_SOURCE[0]}" .sh).exit"
+    #printf "%s\n" "Running 'stop file exists'" | log debug
     if [[ -f "$(dirname -- "$(realpath "${BASH_SOURCE[0]}")")/${exit_file}" ]]; then
         printf "%s\n" "'${exit_file}' was detected." | log debug
         safely_exit 0
@@ -494,8 +525,9 @@ monitor_source_folder() { # 230223-0
     done
     return 0
 }
-run_rclone() { # 240223-1
-    local pid is_active retries rstats
+SWITCH_SERVICE_STATE=0
+run_rclone() { # 240223-2
+    local pid is_active retries
     printf "%s\n" "Starting rclone with the following configuration." | log debug
     printf "%s\n" "$*" | log debug
     rclone "$@" &
@@ -503,7 +535,6 @@ run_rclone() { # 240223-1
     is_active=false
     while :; do
         stop_file_exists
-        #sleep 1
         pid="$(rclone_api pid)"
         if [[ -z "${pid}" ]]; then
             if [[ ${is_active} == false ]]; then
@@ -522,13 +553,22 @@ run_rclone() { # 240223-1
             fi
         fi
         log_rotate
+        is_active=true
+        retries=0
+        if [[ ${SWITCH_SERVICE_STATE} -ge 2 ]]; then
+            printf "%s\n" "Service accounts switched too fast." | log error
+            return 1
+        fi
         if service_account_switch; then
             printf "%s\n" "Enabled Switching Service Accounts" | log debug
             SWITCH_SERVICE_ACCOUNT=true
+            if [[ ${SWITCH_SERVICE_STATE} -eq 0 ]]; then
+                ((SWITCH_SERVICE_STATE=SWITCH_SERVICE_STATE+1))
+            fi
             break
         fi
-        is_active=true
-        retries=0
+        SWITCH_SERVICE_STATE=0
+        sleep 30
     done
     return 0
 }
