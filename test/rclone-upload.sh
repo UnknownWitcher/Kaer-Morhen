@@ -373,8 +373,8 @@ rclone_clean_settings() { #190223-2
             "${RCLONE_SETTINGS[$i]}" == "-vv" || \
             "${RCLONE_SETTINGS[$i]}" == "move" || \
             "${RCLONE_SETTINGS[$i]}" == "${PATH_TARGET}" || \
-            "${RCLONE_SETTINGS[$i]}" == "${PATH_SOURCE}" ]] \
-            "${RCLONE_SETTINGS[$i]}" == "--drive-stop-on-upload-limit"; then
+            "${RCLONE_SETTINGS[$i]}" == "${PATH_SOURCE}" || \
+            "${RCLONE_SETTINGS[$i]}" == "--drive-stop-on-upload-limit" ]]; then
             continue
         fi
         if [[ "${RCLONE_SETTINGS[$i]}" == "--dry-run" ]]; then
@@ -389,9 +389,7 @@ rclone_clean_settings() { #190223-2
                 ((i=i+1))
                 continue
             fi
-        elif [[ "${SERVICE_SWICHER}" == "google" ]]; then
-            tmp_array+=("-drive-stop-on-upload-limit")
-        fi        
+        fi     
         tmp_array+=("${RCLONE_SETTINGS[$i]}")
         if [[ "${RCLONE_SETTINGS[$i]}" == "--max-transfer" ]]; then
             ((i=i+1))
@@ -415,6 +413,9 @@ rclone_clean_settings() { #190223-2
         fi
         tmp_array+=("--exclude" "'*${IGNORE_FOLDERS[$i]}*/**'")
     done
+    if [[ "${SERVICE_SWICHER}" == "google" ]]; then
+        tmp_array+=("--drive-stop-on-upload-limit")
+    fi
     if [[ ${RCLONE_TEST} == true ]]; then
         tmp_array+=("--dry-run")
     fi
