@@ -1,5 +1,5 @@
 #!/bin/bash
-# CONFIG - Alpha-v1.2
+# CONFIG - Alpha-v1.2 - service accounts now switched based on original design
 #
 # path settings
 PATH_SOURCE="/<your upload path>"
