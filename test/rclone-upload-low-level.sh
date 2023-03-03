@@ -1,5 +1,5 @@
 #!/bin/bash
-# CONFIG - Alpha-v1.2
+# CONFIG - Alpha-v1.2 cause fatal error on low level after second retry.
 #
 # path settings
 PATH_SOURCE="/<your upload path>"
