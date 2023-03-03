@@ -431,7 +431,7 @@ rclone_clean_settings() { #190223-2
         "move" "${PATH_SOURCE}" "${PATH_TARGET}"
         "${tmp_array[@]}"
         "--log-file" "${LOG_PATH}"
-        "--low-level-retries" "2"
+        #"--low-level-retries" "2"
         "--rc" "${RCLONE_REMOTE[@]}"
     )
 }
