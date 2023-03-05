@@ -277,8 +277,8 @@ service_account_switch() { # 190223-2
     cnt_transfer="$(printf "%s\n" "${results}" | jq '.bytes')"
     if [[ -z "${cnt_transfer}" ]]; then cnt_transfer=0; fi
     last_error="$(printf "%s\n" "${results}" | jq '.lastError')"
-    if [[ -z "${last_error}" ]]; then last_error=""
-    else last_error="$(printf "%s\n" "${last_error}" | grep "userRateLimitExceeded")"; fi
+    printf "%s\n%s\n%s\n" "${results}" "cnt_transfer: ${cnt_transfer}" "last_error: ${last_error}" | tee "$(dirname -- "${BASH_SOURCE[0]}")/upload_stat.log" > /dev/null 2>&1
+    if [[ -n "${last_error}" ]]; then last_error="$(printf "%s\n" "${last_error}" | grep "userRateLimitExceeded")"; fi
     if [[ ${cnt_transfer} -gt $((${MONITOR_MAX_TRANSFER%G}*1000**3)) ]]; then
         message="Reached max-transfer limit"
     elif [[ -n "${last_error}" ]]; then
