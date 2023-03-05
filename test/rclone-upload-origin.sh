@@ -471,10 +471,10 @@ run_service() { # 030323-1
             ((sacc=sacc+1)) # Increment and save for next run
             if [[ ${sacc} -gt $((${#json_files[@]}-1)) ]]; then
                 sacc=$(service_account_cache 0 save)
-                if [[ $? -eq 1 ]]; then echo "safely exit"; fi
+                if [[ $? -eq 1 ]]; then safely_exit 1; fi
             else
                 sacc=$(service_account_cache ${sacc} save)
-                if [[ $? -eq 1 ]]; then echo "safely exit"; fi
+                if [[ $? -eq 1 ]]; then safely_exit 1; fi
             fi
             if [[ $? -eq 1 ]]; then
                 safely_exit 1
