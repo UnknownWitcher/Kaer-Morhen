@@ -412,6 +412,9 @@ rclone_clean_settings() { #190223-2
         fi
         tmp_array+=("--exclude" "'*${IGNORE_FOLDERS[$i]}*/**'")
     done
+    if [[ "${SERVICE_SWICHER}" == "google" ]]; then
+        tmp_array+=("--low-level-retries" "2")
+    fi
     if [[ ${RCLONE_TEST} == true ]]; then
         tmp_array+=("--dry-run")
     fi
@@ -470,10 +473,10 @@ run_service() { # 030323-1
             run_rclone "${rclone_arg[@]}"
             ((sacc=sacc+1)) # Increment and save for next run
             if [[ ${sacc} -gt $((${#json_files[@]}-1)) ]]; then
-                sacc=$(service_account_cache 0 save)
+                service_account_cache 0 save
                 if [[ $? -eq 1 ]]; then safely_exit 1; fi
             else
-                sacc=$(service_account_cache ${sacc} save)
+                service_account_cache ${sacc} save
                 if [[ $? -eq 1 ]]; then safely_exit 1; fi
             fi
             if [[ $? -eq 1 ]]; then
