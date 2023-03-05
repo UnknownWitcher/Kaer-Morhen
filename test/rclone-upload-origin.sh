@@ -298,13 +298,6 @@ service_account_switch() { # 190223-2
         CNT_TRANSFER_LAST=${cnt_transfer}
         return 1
     fi
-    if [[ $cnt_transfer -gt $((${MONITOR_MAX_TRANSFER%G}*1000**3)) ]]; then
-        message="Reached max-transfer limit"
-    elif [[ -n "${error_user_rate_limit}" ]]; then
-        message="user_rate_limit error"
-    else
-        return 1
-    fi
     printf "%s, %s.\n" "${message}" "switching service accounts." | log info
     return 0
 }
