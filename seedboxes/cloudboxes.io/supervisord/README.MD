@@ -1,4 +1,4 @@
-# supervisord
+# supervisord (deprecated)
 
 ### This contains modified versions of my shell scripts that I use within supervisord.
 
