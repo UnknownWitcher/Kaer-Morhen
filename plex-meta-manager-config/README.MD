@@ -1,6 +1,3 @@
-# Kaer-Morhen
-Personal scripts that I am using/working on.
+# PMM CONFIGURATIONS
 
-**My OS:** Ubuntu 22.04.4 LTS
-
-**Bash Version:** 5.0.17(1)-release
+I'm figuring this stuff out and will eventually upload my configs here.
