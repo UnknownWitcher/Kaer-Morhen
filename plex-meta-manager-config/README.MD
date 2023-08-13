@@ -9,7 +9,6 @@
 * config/assets/kids/films
 * config/assets/kids/shows
 * config/assets/collections
-* config/assets/collections
 
 ```
 Example:
