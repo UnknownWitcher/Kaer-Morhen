@@ -1,7 +1,7 @@
 # unmonitor.sh
 
 ### What is this??
-This script will automatically unmonitor a movie once the movie has been downloaded and imported. It's a simple script but I made it for a someone on a plex group that prefers to unmonitor their media once it has been downloaded.
+This script will automatically unmonitor a movie once the movie has been downloaded and imported. It's a simple script but I made it for someone on a plex group that prefers to unmonitor their media once it has been downloaded.
 
 ### Requirements
 
