@@ -1,9 +1,6 @@
 # Kaer-Morhen
 
->I had plans to store a variety of scripts that either I use or created for others to use
->but ended up not using my repo for a long time. I'm now moving to unraid and will need a
->new scripts for my arrs and a few other things. Even though odds are noone will ever see or
->use the things I share, they will however be a backup for me.
+>I had plans to store a variety of scripts that either I use or created for others to use but ended up not using my repo for a long time. I'm now moving to unraid and will need new scripts for my arrs and a few other things. Even though odds are noone will ever see or use the things I share, they will however be a backup for me.
 
 **FUTURE PLANS?**
 ##### Try to imrpove Autoscan.
