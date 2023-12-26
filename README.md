@@ -42,5 +42,5 @@
   > With regards to audio and subtitles, I would like a way to detect the language if the language metadata isn't available,
   > closest I can do by script is to check the title but a way to sample the audio and figure out the language would be awesome to do in the future.
 ##### Home Automations
-  > I finally have a RaspPi so I might include scripts and general setup here as well as I want to get into home automation.
+  > I finally have a RaspPi so I might include scripts and general setup here, as I want to get into home automation and other stuff.
 ##### Secret Projects - I don't know if I'll share these as it could ruin a good thing.
