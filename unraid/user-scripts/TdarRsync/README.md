@@ -22,7 +22,7 @@ needs to do is check to see whether or not this file exists in our database fold
 ###### Note: These are the options that are required for this to work, everything else is optional but I would recommend enabling Health checks
 |     Name     |    Value    |
 | ------------- | ------------- |
-|Source| same as target |
+|Source| [same as target](#configuration) |
 | Folder Watch     | ✔️ |
 | Process Library  | ✔️ |
 | Transcodes  | ✔️ |
