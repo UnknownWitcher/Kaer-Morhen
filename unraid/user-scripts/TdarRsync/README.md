@@ -1,7 +1,7 @@
 # TdarRsync
 >I needed a script that would copy files from my cloud storage to unraid, I was originally going to use rclone copy but this was just an easier way to handle this.
 
-**CONFIGURATION**
+##### CONFIGURATION
 | Name  | Example | Details | Optional |
 | ------------- | ------------- | ------------- | ------------- |
 | source     | /mnt/disks/series | Location we're copying from  | ❌ |
