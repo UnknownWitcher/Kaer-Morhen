@@ -11,7 +11,7 @@ Scripts taken from [SpaceInvaderOne's video](https://www.youtube.com/watch?v=-b9
   - Make sure the branch is `Stable`.
   - If you have an existing config you can paste it into the config and then hit apply.
     - ℹ️ You can then go to User Scripts plugin to add and setup the schedule.[^1]
-  - If you don't you'll need to configure it. [Config Tutorial](##rclone-config-tutorial)
+  - If you don't you'll need to configure it. [Config Tutorial](#rclone-config-tutorial)
 
 ## RCLONE MOUNT
 - **Schedule:** `At Startup of Array`
