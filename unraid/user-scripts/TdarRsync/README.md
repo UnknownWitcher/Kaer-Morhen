@@ -12,11 +12,13 @@ I needed a script that would do the following
 | target[^1]     | /mnt/user/downloads/series | Temporary location we are copying to | ❌ |
 | database[^2]   | /mnt/user/downloads | Where do you want the database to be stored  | ❌ |
 | subfolder[^3]  | /Title (2024)/Season 01 | Allows you to specify a subfolder witin the source path  | ✔️ |
+| file limit[^4]     | How many files to download before pausing to let tdarr process |  
 
 [^1]: Target should always be a temporary path, tdarr uses this as its source and then moves the processed file to its final location.
 [^2]: Database is the path where we store empty 0 byte duplicates of our files, this is used to identify files we've already downloaded.
 [^3]: Subfolder allows you to be more specific about what you want to download from the source path. This **MUST** be a folder to work
 and there are no limits to how many subfolders you can add to this.
+[^4]: File limit ensures that the cache being used to store these files doesn't get full while tdarr is processing them, i find 10 is a good limit for my internet connection.
 
 ### ☊ Tdarr Library - basic requirements
 |     Name     |    Value    | Necessity |
