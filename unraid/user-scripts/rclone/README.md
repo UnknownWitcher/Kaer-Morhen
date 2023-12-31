@@ -2,7 +2,7 @@
 
 Scripts taken from [SpaceInvaderOne's video](https://www.youtube.com/watch?v=-b9Ow2iX2DQ) and what I could find online regarding setting up rclone.
 
-⚠️ **Warning** This SpaceInaderOnes' video is very outdated and a lot has changed in urnaid, I will do my best to provide a text tutorial on how to set this up.
+⚠️ **Warning** This SpaceInaderOnes' video is very outdated and a lot has changed in unraid, I will do my best to provide a text tutorial on how to set this up.
 
 #### Installing Rclone
 - **Unraid > APPS**
