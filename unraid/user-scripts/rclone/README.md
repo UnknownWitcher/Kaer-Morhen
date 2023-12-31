@@ -11,16 +11,7 @@ Scripts taken from [SpaceInvaderOne's video](https://www.youtube.com/watch?v=-b9
   - Make sure the branch is `Stable`.
   - If you have an existing config you can paste it into the config and then hit apply.
     - ℹ️ You can then go to User Scripts plugin to add and setup the schedule.[^1]
-  - If you don't you'll need to configure it. [EXAMPLE](#terminal)
-    - ℹ️ You can do this through the terminal window on unraid by clicking on the icon "**\>\_**" (top left) or you can
-      use windows command prompt (or putty) choice is yours[^2]
-    - ⚠️ if ssh does not work for you, go to **SETTINGS > Management Access** and (disable then) enable again.
-    - ℹ️ TIP: [download and extract rclone](https://rclone.org/downloads/) for your main operating system and open a second terminal/command prompt on your system.
-      then `cd a:\path\to\rclone`, when you go through the process of configuring rclone in your ssh terminal, you'll need to complete the process on another terminal.
-
-[^1]: [How to install User Script and add a script](/UnknownWitcher/Kaer-Morhen/tree/main/unraid/user-scripts#installing-user-script-and-adding-scripts-to-it).
-[^2]: To run ssh on windows, open command prompt, then enter `ssh username@<ip or host>`, (for now) hit enter and type yes. 
-In Putty, under Session category enter `username@<ip or host>`, make sure port is `20` and then click Open, you can also save this for future sessions.
+  - If you don't you'll need to configure it. [Config Tutorial](##rclone-config-tutorial)
 
 ## RCLONE MOUNT
 - **Schedule:** `At Startup of Array`
@@ -28,12 +19,19 @@ In Putty, under Session category enter `username@<ip or host>`, make sure port i
 ## RCLONE UNMOUNT
 - **Schedule:** `At Stopping of Array`
 
-
 ## Rclone Config Tutorial
+
+- ℹ️ You can do this through the terminal window on unraid by clicking on the icon "**\>\_**" (top right) or you can
+  use windows/linux/mac command prompt (or putty) choice is yours[^2]
+  
+- ⚠️ If ssh does not work for you, go to **Unraid > SETTINGS > Management Access** and (disable then) enable again.
+
+- ℹ️ TIP: [download and extract rclone](https://rclone.org/downloads/) for your main operating system and open a second terminal/command prompt on that system,
+  then `cd a:\path\to\rclone`, when you go through the process of configuring rclone in your ssh terminal, you'll need to complete the process on another terminal.
 
 I'm going to use google in this example as I don't want to re-configure my dropbox..
 
-I'm also only setup the non-encrypted remote, so encrypt, you would go through this process again except when selecting your storage, you wold choose
+I'm also only setup the non-encrypted remote, to encrypt, you would go through this process again except when selecting your storage, you wold choose
 
 ```
 14 / Encrypt/Decrypt a remote
@@ -134,6 +132,33 @@ Execute the following on the machine with the web browser (same rclone version r
 Then paste the result.
 Enter a value.
 config_token>[really long confirmation code]
+
+>> NOTE: For config_token, refer to the other terminal.
+
+Configure this as a Shared Drive (Team Drive)?
+
+y) Yes
+n) No (default)
+y/n> n
+
+>> NOTE: I highly suggest using teamdrive and shared accounts on google
+         if you have the option to use them, these can be added later.
+
+Configuration complete.
+Options:
+- type: drive
+- client_id: 486701372951-jppjai8jf1ndi9rbbqmcd52bu0sk8k8g.apps.googleusercontent.com
+- client_secret: 53JsaasayLsHhns1hcFJIPsb
+- scope: drive
+- token: {"access_token":"<removed>","token_type":"Bearer","refresh_token":"<removed>","expiry":"<removed>"}
+- team_drive: 
+Keep this "dcrypt-gdrive" remote?
+y) Yes this is OK (default)
+e) Edit this remote
+d) Delete this remote
+y/e/d> y
+
+NOTE: Thats all there is to it. Now you can add your mount scripts to unraid, making sure to use your remote names.
 ```
     
 OTHER TERMINAL ON OUR SYSTEM
@@ -141,7 +166,7 @@ OTHER TERMINAL ON OUR SYSTEM
 ```    
 A:\rclone-v1.65.0-windows-amd64>rclone authorize "drive" "[really long authcode]"
 2023/12/31 22:00:40 NOTICE: Make sure your Redirect URL is set to "http://127.0.0.1:53682/" in your custom config.
-2023/12/31 22:00:40 NOTICE: If your browser doesn't open automatically go to the following link: http://127.0.0.1:53682/auth?state=u_ZBWeqxw0Dn48vSbnRPTQ
+2023/12/31 22:00:40 NOTICE: If your browser doesn't open automatically go to the following link: http://127.0.0.1:53682/auth?state=<removed>
 2023/12/31 22:00:40 NOTICE: Log in and authorize rclone for access
 2023/12/31 22:00:40 NOTICE: Waiting for code...
 
@@ -158,3 +183,7 @@ Paste the following into your remote machine --->
 [really long confirmation code]
 <---End paste
 ```
+
+[^1]: [How to install User Script and add a script](/UnknownWitcher/Kaer-Morhen/tree/main/unraid/user-scripts#installing-user-script-and-adding-scripts-to-it).
+[^2]: To run ssh on windows, open command prompt, then enter `ssh username@<ip or host>`, (for now) hit enter and type yes. 
+In Putty, under Session category enter `username@<ip or host>`, make sure port is `20` and then click Open, you can also save this for future sessions.
