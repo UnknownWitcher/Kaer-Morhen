@@ -1,6 +1,6 @@
 # MOUNT SCRIPTS (01/01/2024)
 
-This is my replacement mount script that has worked flawlessly with this seedbox for the past 12 months.
+This is my replacement mount script that has worked 99% of the time with this seedbox for the past 12 months.
 
 ### rc-mount.py
 I tried to make this as simple as possible, bear in mind this is for my use case so I have not tested every option that rclone provides,
