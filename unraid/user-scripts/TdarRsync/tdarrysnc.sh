@@ -4,8 +4,8 @@ CONFIG='{
 	"source": "/mnt/disks/db_shows/series",
 	"target": "/mnt/user/downloads/dropbox/series",
 	"database": "/mnt/user/downloads",
-	"subfolder": "/NCIS (2003) [tvdb-72108]/Season 03",
-	"file limit": 10
+	"subfolder": "/NCIS (2003) [tvdb-72108]",
+	"file_limit": 10
 }'
 
 main() {
@@ -16,7 +16,7 @@ main() {
 	target="$(config "target")"
 	subfolder=$(config "subfolder")
 	datapath="$(config "database")/tdarrsyncDB"
-	fileLimit=$(config "file limit")
+	fileLimit=$(config "file_limit")
 	queue=()
 
 	directory="${source}"
@@ -45,29 +45,6 @@ main() {
 			fi
 		fi
 
-		if [[ -f "${database}" ]]; then
-			continue
-		fi
-
-		destination="$(dirname -- "${fileDestination}")"
-
-		mkdirmod "${target}" "${destination}"
-		sleep 1
-
-		echo "Copying ${file} ==> ${destination}"
-		sleep 10
-		TDSDB_CURRENT_PROCESS=("${database}" "${fileDestination}")
-		rsync -a "${file}" "${destination}"
-		response=$?
-
-		if [[ ${response} -ne 0 ]]; then
-			echo "rsync failed, exiting.."
-			exit ${response}
-		fi
-		setDatabase "${database}"
-		echo "--- Adding to queue"
-		queue+=("${fileDestination}")
-
 		if [[ ${#queue[@]} -ge ${fileLimit} ]]; then
 			queueMsg=false
 			while :; do
@@ -86,6 +63,29 @@ main() {
 			done
 
 		fi
+
+		if [[ -f "${database}" ]]; then
+			continue
+		fi
+
+		destination="$(dirname -- "${fileDestination}")"
+		
+		mkdirmod "${target}" "${destination}"
+		sleep 1
+
+		echo "Copying ${file} ==> ${destination}"
+		sleep 10
+		TDSDB_CURRENT_PROCESS=("${database}" "${fileDestination}")
+		rsync -a "${file}" "${destination}"
+		response=$?
+
+		if [[ ${response} -ne 0 ]]; then
+			echo "rsync failed, exiting.."
+			exit ${response}
+		fi
+		setDatabase "${database}"
+		echo "--- Adding to queue"
+		queue+=("${fileDestination}")
 
 	done < <(find "${directory}" -type f -print0)
 }
