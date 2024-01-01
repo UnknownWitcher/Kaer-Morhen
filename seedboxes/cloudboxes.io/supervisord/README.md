@@ -37,7 +37,7 @@ The config file works the same as entering the options directly into rclone the 
 ```yaml
 profile:
     name:
-        option:...
+        option: "value"
 ```
 
 **Following options are required**
