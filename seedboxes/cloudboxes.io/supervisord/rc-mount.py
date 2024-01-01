@@ -9,7 +9,7 @@ import subprocess
 
 from pathlib import Path
 
-DEFAULT_CONF = Path(__file__).resolve().parent / 'db-mount.yaml'
+DEFAULT_CONF = Path(__file__).resolve().parent / 'rc-mount.yml'
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                     description='Dropbox rclone mount script by unknown witcher',
