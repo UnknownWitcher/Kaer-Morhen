@@ -1,9 +1,13 @@
-# TdarRsync
+# TdarRsync 
+
 I needed a script that would do the following
 - [x] Download media files from cloud storage to local storage (cache).
 - [x] Preserve relative paths.
 - [x] Limit total amount of media files on cache at one time.
 - [x] Avoid re-downloading the same files.
+
+### HOW IT WORKS
+CLOUD ➡️ RSYNC ➡️ CACHE ➡️ TDARR ➡️ DISK ARRAY
 
 ### ⚙️ Configuration
 | Name  | Example | Details | Optional |
@@ -31,8 +35,4 @@ and there are no limits to how many subfolders you can add to this.
 >**Note:** With the exception of the required settings, everything else is up to you, as long as tdarr processes the files and removes it
 from the target directory then this script will work.
 
-### 🐞 BUGS
->These are issues that I have encountered while using this script, hopefully I resolve all of them.
-- [x] ~~Issue: Empty directories are not being removed.~~ Solved: Added cleaner with trap exit.
-- [x] ~~Issue: queue limit is not checked during startup.~~ Solved: Add check to count existing files in target.
-- [x] ~~Issue: Database can fail to update if user aborts script just as a file is downloaded.~~ Solved: Added check to cleaner function.
+>ⓘ Because this script looks through the source path and compares all the files to the database folder, eventually it will take a bit longer than usual for the script to start, I don't think there will be a solution to this in bash and I'm not sure if one is even possible in any other language without storing this data in a proper database (such as sqlite3), so a future version of this script may see me make the move to sqlite3 to try and reduce the time it takes for this to start.
