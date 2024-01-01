@@ -1,8 +1,8 @@
 # RCLONE
 
-Scripts taken from [SpaceInvaderOne's video](https://www.youtube.com/watch?v=-b9Ow2iX2DQ) and what I could find online regarding setting up rclone.
+Scripts taken from [SpaceInvaderOne's video](https://www.youtube.com/watch?v=-b9Ow2iX2DQ) and what I could find online regarding setting up rclone on unraid.
 
-⚠️ **Warning** This SpaceInaderOnes' video is very outdated and a lot has changed in unraid, I will do my best to provide a text tutorial on how to set this up.
+⚠️ **Warning** The SpaceInaderOnes video is very outdated and a lot has changed in unraid, I will do my best to provide a text tutorial on how to set this up.
 
 #### Installing Rclone
 - **Unraid > APPS**
@@ -24,21 +24,21 @@ Scripts taken from [SpaceInvaderOne's video](https://www.youtube.com/watch?v=-b9
 - ℹ️ You can do this through the terminal window on unraid by clicking on the icon "**\>\_**" (top right) or you can
   use windows/linux/mac command prompt (or putty) choice is yours[^2]
   
-- ⚠️ If ssh does not work for you, go to **Unraid > SETTINGS > Management Access** and (disable then) enable again.
+- ⚠️ If ssh does not work for you, go to **Unraid > SETTINGS > Management Access** and (disable then) enable.
 
 - ℹ️ TIP: [download and extract rclone](https://rclone.org/downloads/) for your main operating system and open a second terminal/command prompt on that system,
   then `cd a:\path\to\rclone`, when you go through the process of configuring rclone in your ssh terminal, you'll need to complete the process on another terminal.
 
 I'm going to use google in this example as I don't want to re-configure my dropbox..
 
-I'm also only setup the non-encrypted remote, to encrypt, you would go through this process again except when selecting your storage, you wold choose
+I'm only going to setup the non-encrypted remote, so to encrypt you would go through this process again except when selecting your storage, you wold choose
 
 ```
 14 / Encrypt/Decrypt a remote
    \ (crypt)
 ```
 
-I also suggest using `crypt-name` and `dcrypt-name`, with the encryption you only need to set this up once for one remote, then you can go into your config and copy/paste that part of the configuration and change to work with another remote.
+I also suggest using `crypt-name` and `dcrypt-name`, with the encryption you only need to set this up once for one remote, then you can go into your config and copy/paste that part of the configuration and change it to work with another remote.
 
 REMOTE SSH TERMINAL
 
