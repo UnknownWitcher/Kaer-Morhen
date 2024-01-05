@@ -8,8 +8,8 @@
 ## Plugins
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/rclone/rclone/master/graphics/logo/logo_symbol/logo_symbol_color_512px.png" width="50px" title="Rclone By Waseh" />
-  <img src="https://raw.githubusercontent.com/Squidly271/user.scripts/master/source/user.scripts/usr/local/emhttp/plugins/user.scripts/images/user.scripts.png" width="50px" title="User Scripts By Andrew Zawadzki" />
+  <a href="#"><img src="https://raw.githubusercontent.com/rclone/rclone/master/graphics/logo/logo_symbol/logo_symbol_color_512px.png" width="50px" title="Rclone By Waseh" /></a>
+  <a href="#"><img src="https://raw.githubusercontent.com/Squidly271/user.scripts/master/source/user.scripts/usr/local/emhttp/plugins/user.scripts/images/user.scripts.png" width="50px" title="User Scripts By Andrew Zawadzki" /></a>
 </p>
 
 ## DOCKERS
