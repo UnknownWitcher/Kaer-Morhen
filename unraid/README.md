@@ -1,5 +1,9 @@
 # UNRAID
-**VERSION:** 6.12.6
+**VERSION:** 6.12.6<br />
+**GPU:** Nvidia 1660 Ti OC 6GB<br />
+**CPU:** Intel® Core™ i5-10400 CPU @ 2.90GHz<br />
+**RAM:** 32 GiB DDR4<br />
+**Internet:** 1000Mbps🔻 | 100Mbps 🔺
 
 ## Plugins
 
