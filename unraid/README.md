@@ -21,5 +21,41 @@
   <a href="https://unraid.net/community/apps?q=recyclarr"><img src="https://avatars.githubusercontent.com/u/105823709?s=200&v=4" width="50px" title="Recyclarr" /></a>
   <a href="https://unraid.net/community/apps?q=Sabnzbd(http%3A%2F%2Fsabnzbd.org%2F)"><img src="https://avatars.githubusercontent.com/u/960698?s=200&v=4" width="50px" title="SABnzbd" /></a>
   <a href="https://unraid.net/community/apps?q=tdarr"><img src="https://avatars.githubusercontent.com/u/43864057?v=4" width="50px" title="Tdarr" /></a>
-  
 </p>
+
+## Shares
+
+| Name | STORAGE |
+| ---: | :---: |
+| Appdata | Cache_ssd |
+| Domains | Cache_ssd |
+| downloads | Cache ⬅ Array |
+| films | Array |
+| isos | Cache_ssd |
+| series | Array |
+| System | Cache_ssd |
+| tdarr_cache | Cache ⬅ Array |
+
+## Media Paths
+
+```
+/mnt/media/downloads
+                /dropbox
+                        /films
+                        /series
+                /sabnzbd
+                        /complete
+                        /incomplete
+                /tdarrsyncDB
+/mnt/media/series
+                /anime
+                /foreign
+                /kids
+                /shows
+/mnt/media/films
+                /anime
+                /foreign
+                /kids
+                /movies
+/mnt/media/music
+```
