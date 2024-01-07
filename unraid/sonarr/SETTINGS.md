@@ -61,7 +61,7 @@ Specials
 
 **Unmonitor Deleted Episodes:** ✔️ 
 
-**Propers and Repacks:** `Do not Prefer` ℹ️ *Letting this upgrade has caused mw problems in the past.*
+**Propers and Repacks:** `Do not Prefer` ℹ️ *Letting this upgrade has caused me some problems in the past.*
 
 **Analyse video files:** *(advanced)* ✔️ ℹ️ *I normally have this unchecked when using cloud storage.*
 
