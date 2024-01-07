@@ -1,133 +1,170 @@
 #!/bin/bash
 # shellcheck disable=SC2089
-CONFIG='{
-	"source": "/mnt/disks/db_shows/series",
-	"target": "/mnt/user/downloads/dropbox/series",
-	"database": "/mnt/user/downloads",
-	"subfolder": "/NCIS (2003) [tvdb-72108]",
-	"file_limit": 10
-}'
+CONFIG="{
+	\"source\": \"/mnt/disks/db_shows/series\",
+	\"target\": \"/mnt/user/downloads/dropbox/series/shows\",
+	\"database\": \"/mnt/user/downloads\",
+	\"subfolder\": [
+		\"/Arrow (2012) [tvdb-257655]\",
+		\"/The Flash (2014) [tvdb-279121]\",
+		\"/Constantine (2014) [tvdb-273690]\",
+		\"/DC's Legends of Tomorrow (2016) [tvdb-295760]\"
+	],
+	\"file_limit\": 10
+}"
+function invoke-script {
+	local limiter value temp
+	limiter=$(get-config "file_limit")
+	if [[ ${limiter} -le 0 ]]; then limiter=10; fi
 
-main() {
-	local source target subfolder datapath fileLimit queue  directory \
-			file destination response queueMsg
-
-	source="$(config "source")"
-	target="$(config "target")"
-	subfolder=$(config "subfolder")
-	datapath="$(config "database")/tdarrsyncDB"
-	fileLimit=$(config "file_limit")
-	queue=()
+	while read -r value; do
+		temp=""
+		if [[ -n "${value}" ]] && ! [[ "${value}" == "/" ]]; then
+			temp="${value}"
+			if ! [[ "${value::1}" == "/" ]]; then
+				temp="/${value}"
+			fi
+		fi
+		invoke-process "${temp}" "${limiter}"
+	done < <(get-config 'subfolder')
+}
+function invoke-process {
+	local source target datapath filelimit directory file database \
+			targetFile queueState targetFileDirname response
+	
+	source="$(get-config 'source')"
+	target="$(get-config 'target')"
+	datapath="$(get-config 'database')/tdarrsyncDB"
+	filelimit="${2}"
 
 	directory="${source}"
-	if [[ -n "${subfolder}" ]] && ! [[ "${subfolder}" == "/" ]]; then
-		if [[ "${subfolder::1}" == "/" ]]; then
-			directory="${directory}${subfolder}"
-		else
-			directory="${directory}/${subfolder}"
-		fi
+	if [[ -n "${1}" ]]; then
+		directory="${directory}${1}"
 	fi
-
-	if [[ ${fileLimit} -le 0 ]]; then fileLimit=10; fi
-	if [[ ${fileLimit} -gt 1 ]]; then ((fileLimit--)); fi
-
+	if ! [[ -d "${directory}" ]]; then
+		echo "Directory does not exist: '${directory}'"
+		return
+	fi
 	while IFS= read -r -d '' file; do
 
 		database="${file%.*}.tsdb"; database="${database/${source}/${datapath}}"
-		fileDestination="${file/${source}/${target}}"
+		targetFile="${file/${source}/${target}}"
 
-		if [[ -f "${fileDestination}" ]]; then
-			echo "'$(basename -- "${file}")' in target path, adding to queue"
-			queue+=("${fileDestination}")
+		if [[ -f "${targetFile}" ]]; then
+			echo "'$(basename -- "${file}")' in target path."
+			set-queue "${targetFile}"
 			if ! [[ -f "${database}" ]]; then
-				touch "${database}"
+				set-database "${datapath}" "${database}"
 				sleep 1
 			fi
 		fi
 
-		if [[ ${#queue[@]} -ge ${fileLimit} ]]; then
-			queueMsg=false
+		if [[ ${#GLOBAL_QUEUE[@]} -ge ${filelimit} ]]; then
+			queueState=false
 			while :; do
-				for i in "${!queue[@]}"; do
-					if ! [[ -f "${queue[i]}" ]]; then
-						echo "processed: $(basename -- "${queue[i]}")"
-						unset queue[i]
+				for i in "${!GLOBAL_QUEUE[@]}"; do
+					if ! [[ -f "${GLOBAL_QUEUE[i]}" ]] && [[ -n "${GLOBAL_QUEUE[i]}" ]]; then
+						echo "processed: $(basename -- "${GLOBAL_QUEUE[i]}")"
+						unset "GLOBAL_QUEUE[i]"
 					fi
 				done
-				if [[ ${#queue[@]} -le ${fileLimit} ]]; then break; fi
-				if [[ "${queueMsg}" == "false" ]]; then
-					echo "Waiting for tdarr to process some files.";
-					queueMsg=true
+				if [[ ${#GLOBAL_QUEUE[@]} -lt ${filelimit} ]]; then break; fi
+				if [[ "${queueState}" == "false" ]]; then
+					echo "Waiting for tdarr to process some files."
+					queueState=true
 				fi
 				sleep 60
 			done
-
 		fi
 
 		if [[ -f "${database}" ]]; then
 			continue
 		fi
 
-		destination="$(dirname -- "${fileDestination}")"
-		
-		mkdirmod "${target}" "${destination}"
+		targetFileDirname="$(dirname -- "${targetFile}")"
+
+		create-dir "${target}" "${targetFileDirname}"
 		sleep 1
 
-		echo "Copying ${file} ==> ${destination}"
-		sleep 10
-		TDSDB_CURRENT_PROCESS=("${database}" "${fileDestination}")
-		rsync -a "${file}" "${destination}"
+		CURRENT_PROCESS=("${database}" "${targetFile}")
+
+		echo "Copying $(basename -- "${file}") ==> ${targetFileDirname}"
+		rsync -a "${file}" "${targetFileDirname}"
 		response=$?
 
 		if [[ ${response} -ne 0 ]]; then
 			echo "rsync failed, exiting.."
 			exit ${response}
 		fi
-		setDatabase "${database}"
-		echo "--- Adding to queue"
-		queue+=("${fileDestination}")
+
+		set-database "${datapath}" "${database}"
+		set-queue "${targetFile}"
 
 	done < <(find "${directory}" -type f -print0)
 }
-config() {
+function get-config {
+	function test-array {
+		return "$(echo "${CONFIG}" | jq ."${1}" | \
+			jq 'if type=="array" then 0 else 1 end')"
+	}
+	if test-array "${1}"; then
+		echo "${CONFIG}" | jq -r ."${1}[]"
+		return
+	fi
 	echo "${CONFIG}" | jq -r ."${1}"
 }
-cleanTargetPath() {
-	local target; target="$(config 'target')"
-	if [[ -d "${target}" ]]; then
-		# Delete empty folders except source folder
-		find "${target}" -mindepth 1 -type d -empty -delete
-	fi
-	if [[ ${#TDSDB_CURRENT_PROCESS[@]} -eq 0 ]]; then return 0; fi
-	if [[ -f "${TDSDB_CURRENT_PROCESS[0]}" ]]; then return 0; fi
-	if [[ -f "${TDSDB_CURRENT_PROCESS[1]}" ]]; then
-		setDatabase "${TDSDB_CURRENT_PROCESS[0]}"
-	fi
+function set-queue {
+	GLOBAL_QUEUE+=("${1}")
+	echo "--- Adding to queue"
 }
-setDatabase() {
-	mkdir -p "$(dirname -- "${1}")"
-	touch "${1}"
+function set-database {
+	local rootPath file; rootPath="${1}"; file="${2}"
+
+	create-dir "${rootPath}" "$(dirname -- "${file}")"
+
+	touch "${file}"; chmod 666 "${file}"
 	echo "--- Adding to database."
 }
-mkdirmod() {
-	local target destination fixTargetPermissions modPath
+function create-dir {
+	local rootPath filePath fixPermissions
 
-	target="${1}"; destination="${2}"
-	fixTargetPermissions=false
+	rootPath="${1}"; filePath="${2}"; fixPermissions=false
 
-	if [[ -d "${destination}" ]]; then return 0; fi
-	if ! [[ -d "${target}" ]]; then fixTargetPermissions=true; fi
-	
-	mkdir -p "${destination}"
+	if [[ -d "${filePath}" ]]; then return 0; fi
+	if ! [[ -d "${rootPath}" ]]; then fixPermissions=true; fi
 
-	if [[ "${fixTargetPermissions}" == "true" ]]; then
-		modPath="${target}"
-	else
-		modPath="${target}/$(echo "${destination#"${target}"}" | cut -d "/" -f2)"
+	mkdir -p "${filePath}"
+
+	if [[ "${fixPermissions}" != "true" ]]; then
+		rootPath="${rootPath}/$(echo "${filePath#"${rootPath}"}" | cut -d "/" -f2)"
 	fi
 
-	find "${modPath}" -type d -exec chmod 777 {} +
+	find "${rootPath}" -type d -exec chmod 777 {} +
 }
-trap cleanTargetPath EXIT
-TDSDB_CURRENT_PROCESS=()
-main
+function invoke-cleaner {
+	local target datapath files
+	target="$(get-config 'target')"
+
+	if [[ -d "${target}" ]]; then
+		while :; do
+			readarray -d '' files < <(find "${target}" -mindepth 1 -type d -empty -print0)
+			if [[ "${#files[@]}" -gt 0 ]]; then
+				find "${target}" -mindepth 1 -type d -empty -delete
+				continue
+			fi
+			break
+		done
+	fi
+	
+	if [[ ${#CURRENT_PROCESS[@]} -eq 0 ]]; then return 0; fi
+	if [[ -f "${CURRENT_PROCESS[0]}" ]]; then return 0; fi
+	if [[ -f "${CURRENT_PROCESS[1]}" ]]; then
+		datapath="$(get-config 'database')/tdarrsyncDB"
+		set-database "${datapath}" "${CURRENT_PROCESS[0]}"
+	fi
+}
+## RUN
+trap invoke-cleaner exit SIGINT SIGTERM SIGHUP SIGPIPE SIGQUIT
+CURRENT_PROCESS=()
+GLOBAL_QUEUE=()
+invoke-script
