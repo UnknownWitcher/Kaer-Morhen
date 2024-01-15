@@ -26,6 +26,7 @@ function invoke-script {
 			fi
 		fi
 		invoke-process "${temp}" "${limiter}"
+		invoke-cleaner
 	done < <(get-config 'subfolder')
 }
 function invoke-process {
@@ -124,6 +125,7 @@ function set-database {
 
 	touch "${file}"; chmod 666 "${file}"
 	echo "--- Adding to database."
+	CURRENT_PROCESS=()
 }
 function create-dir {
 	local rootPath filePath fixPermissions
@@ -146,6 +148,7 @@ function invoke-cleaner {
 	target="$(get-config 'target')"
 
 	if [[ -d "${target}" ]]; then
+		echo "Cleaning - '${target}'"
 		while :; do
 			readarray -d '' files < <(find "${target}" -mindepth 1 -type d -empty -print0)
 			if [[ "${#files[@]}" -gt 0 ]]; then
@@ -164,7 +167,7 @@ function invoke-cleaner {
 	fi
 }
 ## RUN
-trap invoke-cleaner exit SIGINT SIGTERM SIGHUP SIGPIPE SIGQUIT
 CURRENT_PROCESS=()
 GLOBAL_QUEUE=()
+trap "invoke-cleaner" EXIT SIGINT SIGTERM
 invoke-script
