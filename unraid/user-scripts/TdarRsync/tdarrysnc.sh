@@ -10,11 +10,13 @@ CONFIG="{
 		\"/Constantine (2014) [tvdb-273690]\",
 		\"/DC's Legends of Tomorrow (2016) [tvdb-295760]\"
 	],
+	\"file_type\": \"video\",
 	\"file_limit\": 10
 }"
 function invoke-script {
 	local limiter value temp
 	limiter=$(get-config "file_limit")
+
 	if [[ ${limiter} -le 0 ]]; then limiter=10; fi
 
 	while read -r value; do
@@ -26,17 +28,20 @@ function invoke-script {
 			fi
 		fi
 		invoke-process "${temp}" "${limiter}"
-		invoke-cleaner
+		if [[ ${ENABLE_CLEANER} -eq 1 ]]; then
+			invoke-cleaner
+		fi
 	done < <(get-config 'subfolder')
 }
 function invoke-process {
-	local source target datapath filelimit directory file database \
+	local source target datapath filelimit directory file fileType getFileType database \
 			targetFile queueState targetFileDirname response
 	
 	source="$(get-config 'source')"
 	target="$(get-config 'target')"
 	datapath="$(get-config 'database')/tdarrsyncDB"
 	filelimit="${2}"
+	fileType="$(get-config 'file_type')"
 
 	directory="${source}"
 	if [[ -n "${1}" ]]; then
@@ -47,9 +52,16 @@ function invoke-process {
 		return
 	fi
 	while IFS= read -r -d '' file; do
-
-		database="${file%.*}.tsdb"; database="${database/${source}/${datapath}}"
+		database="${file}.tsdb"; database="${database/${source}/${datapath}}"
 		targetFile="${file/${source}/${target}}"
+
+		if ! [[ -f "${database}" ]]; then
+			getFileType="$(get-fileType "${file}")"
+			if ! [[ "${getFileType}" == "${fileType}" ]]; then
+				set-database "${datapath}" "${database}" > /dev/null 2>&1
+				continue
+			fi
+		fi
 
 		if [[ -f "${targetFile}" ]]; then
 			echo "'$(basename -- "${file}")' in target path."
@@ -97,7 +109,8 @@ function invoke-process {
 			echo "rsync failed, exiting.."
 			exit ${response}
 		fi
-
+		
+		ENABLE_CLEANER=1
 		set-database "${datapath}" "${database}"
 		set-queue "${targetFile}"
 
@@ -113,6 +126,11 @@ function get-config {
 		return
 	fi
 	echo "${CONFIG}" | jq -r ."${1}"
+}
+function get-fileType {
+	local checkFile getType
+	checkFile="$1" getType="$(file -ib "${checkFile}")"
+	echo "${getType%/*}"
 }
 function set-queue {
 	GLOBAL_QUEUE+=("${1}")
@@ -146,7 +164,7 @@ function create-dir {
 function invoke-cleaner {
 	local target datapath files
 	target="$(get-config 'target')"
-
+	echo "Running Cleaner"
 	if [[ -d "${target}" ]]; then
 		echo "Cleaning - '${target}'"
 		while :; do
@@ -169,5 +187,6 @@ function invoke-cleaner {
 ## RUN
 CURRENT_PROCESS=()
 GLOBAL_QUEUE=()
-trap "invoke-cleaner" EXIT SIGINT SIGTERM
+ENABLE_CLEANER=0
+
 invoke-script
