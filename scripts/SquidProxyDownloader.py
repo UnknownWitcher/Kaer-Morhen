@@ -70,7 +70,7 @@ def SquidProxyDownloader(baseURL,urlPath=None, downloadPath=None, keep_hierarchy
 
         if savePath.exists():
             continue
-
+        
         try:
             print(f"Downloading: {href}")
             data_file = urllib.parse.quote(f'{urlPath}{href}')
@@ -86,5 +86,10 @@ def displayProgress(blocknum, bs, size):
     print(f'\r[{done:<40}] {percent:.1%}', end='')
 
 if __name__ == '__main__':
-    url = "https://www.squid-proxy.xyz/"
-    SquidProxyDownloader(baseURL=url, keep_hierarchy=False)
+    try:
+        SquidProxyDownloader(
+            baseURL="https://www.squid-proxy.xyz/", 
+            keep_hierarchy=False
+        )
+    except KeyboardInterrupt:
+        sys.exit(0)
