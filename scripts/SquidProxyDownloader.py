@@ -71,10 +71,14 @@ def SquidProxyDownloader(baseURL,urlPath=None, downloadPath=None, keep_hierarchy
         if savePath.exists():
             continue
 
-        print(f"Downloading: {href}")
-        data_file = urllib.parse.quote(f'{urlPath}{href}')
-        urlretrieve(f'{baseURL}{data_file}', savePath, displayProgress)
-        print(end='\n')
+        try:
+            print(f"Downloading: {href}")
+            data_file = urllib.parse.quote(f'{urlPath}{href}')
+            urlretrieve(f'{baseURL}{data_file}', savePath, displayProgress)
+            print(end='\n')
+        except KeyboardInterrupt:
+            os.remove(savePath) 
+            sys.exit(0)
 
 def displayProgress(blocknum, bs, size):
     percent = (blocknum * bs) / size
@@ -82,7 +86,5 @@ def displayProgress(blocknum, bs, size):
     print(f'\r[{done:<40}] {percent:.1%}', end='')
 
 if __name__ == '__main__':
-    try:
-        SquidProxyDownloader(baseURL=url, keep_hierarchy=False)
-    except KeyboardInterrupt:
-        pass
+    url = "https://www.squid-proxy.xyz/"
+    SquidProxyDownloader(baseURL=url, keep_hierarchy=False)
