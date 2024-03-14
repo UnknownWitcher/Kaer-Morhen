@@ -82,4 +82,7 @@ def displayProgress(blocknum, bs, size):
     print(f'\r[{done:<40}] {percent:.1%}', end='')
 
 if __name__ == '__main__':
-    SquidProxyDownloader(baseURL="https://www.squid-proxy.xyz/", keep_hierarchy=False)
+    try:
+        SquidProxyDownloader(baseURL=url, keep_hierarchy=False)
+    except KeyboardInterrupt:
+        pass
