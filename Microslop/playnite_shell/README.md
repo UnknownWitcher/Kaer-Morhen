@@ -48,8 +48,12 @@ playnite_shell\
 └── icon.png
 ```
 
+> For more information regarding MPV, check out this [README](https://github.com/UnknownWitcher/Kaer-Morhen/blob/main/Microslop/playnite_shell/bin/mpv/README.md)
+>
+> Splash screen videos can be obtained from [tedhinklater/playnitesplashintro](https://github.com/tedhinklater/playnitesplashintro) 
+>
 > `icon.png` is optional, and is only used as the notification icon. If missing, notifications will still work without it.
-
+>
 ---
 
 ## Requirements
