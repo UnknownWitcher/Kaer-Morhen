@@ -47,8 +47,6 @@ playnite_shell\
 │   └── nite_loader.log
 └── icon.png
 ```
-
-> For more information regarding MPV, check out this [README](https://github.com/UnknownWitcher/Kaer-Morhen/blob/main/Microslop/playnite_shell/bin/mpv/README.md)
 >
 > Splash screen videos can be obtained from [tedhinklater/playnitesplashintro](https://github.com/tedhinklater/playnitesplashintro) 
 >
@@ -62,6 +60,9 @@ playnite_shell\
 - [Python 3.11+](https://www.python.org/downloads/) — install with "Add Python to PATH" ticked
 - [mpv](https://mpv.io/installation/) — place `mpv.exe` in `\bin\mpv\`
 - [Playnite](https://playnite.link) — installed as normal
+
+The MPV build used for this project was the [2026-04-14-da4789c](https://github.com/zhongfly/mpv-winbuild/releases/tag/2026-04-14-da4789c) from zhongfly/mpv-winbuild, 
+you will need winrar or 7z to extract the .exe file.
 
 **Optional but recommended**
 ```
