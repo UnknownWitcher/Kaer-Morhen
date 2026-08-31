@@ -7,6 +7,13 @@ be safe, and keeps lightweight records so removals can be undone later.
 Pacman remains the source of truth for installed/orphan state — this tool
 only tracks its own decisions (kept, removed) alongside it.
 
+## Installation
+
+Copy `cachy-orphan` to `~/.local/bin`
+
+>[!NOTE]
+> You may need to add `~/.local/bin` to your shells path
+
 ## Usage
 
 ```bash
