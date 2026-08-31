@@ -1,0 +1,719 @@
+#!/usr/bin/env bash
+#
+# cachy-orphan - safe, interactive orphan-package assistant for Arch/CachyOS
+#
+set -uo pipefail
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/cachy-orphan"
+KEPT_PATH="${DATA_HOME}/kept"
+REMOVED_PATH="${DATA_HOME}/removed"
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/cachy-orphan/config"
+
+PACMAN_LOG="/var/log/pacman.log"
+SESSION_LOG=""
+
+REMOVED_RETENTION="90d"
+DEFAULT_LIST_RANGE="21d"
+RESTORE_GROUP_WINDOW="30m"
+AUTOMATIC_CLEANUP=true
+
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    mkdir -p -- "$(dirname "$CONFIG_FILE")"
+    {
+        printf 'REMOVED_RETENTION="%s"\n' "${REMOVED_RETENTION}"
+        printf 'DEFAULT_LIST_RANGE="%s"\n' "${DEFAULT_LIST_RANGE}"
+        printf 'RESTORE_GROUP_WINDOW="%s"\n' "${RESTORE_GROUP_WINDOW}"
+        printf 'AUTOMATIC_CLEANUP="%s"\n' "${AUTOMATIC_CLEANUP}"
+    } >> "$CONFIG_FILE"
+else
+    # shellcheck source=/dev/null
+    source "$CONFIG_FILE"
+fi
+
+# ---------------------------------------------------------------------------
+# Utility functions
+# ---------------------------------------------------------------------------
+
+die() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+have() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+need_pacman() {
+    have pacman || die "pacman not found on this system."
+}
+
+confirm() {
+    # confirm "prompt text" [default: N]
+    local prompt="$1" default="${2:-N}" reply
+    if [[ "$default" == "Y" ]]; then
+        read -r -p "$prompt [Y/n]: " reply
+        reply="${reply:-Y}"
+    else
+        read -r -p "$prompt [y/N]: " reply
+        reply="${reply:-N}"
+    fi
+    [[ "$reply" =~ ^[Yy]$ ]]
+}
+
+log_session() {
+    [[ -n "$SESSION_LOG" ]] && printf '%s %s\n' "$(date --iso-8601=seconds)" "$*" >> "$SESSION_LOG"
+}
+
+# ---------------------------------------------------------------------------
+# Pacman functions
+# ---------------------------------------------------------------------------
+
+pkg_installed() {
+    pacman -Qq "$1" >/dev/null 2>&1
+}
+
+pkg_field() {
+    local package="$1" field="$2"
+    pacman -Qi "$package" 2>/dev/null | awk -v f="$field" '
+        $0 ~ "^" f "[[:space:]]*:" {
+            sub(/^[^:]*:[[:space:]]*/, "", $0)
+            print
+            exit
+        }
+    '
+}
+
+find_orphans() {
+    pacman -Qtdq 2>/dev/null || true
+}
+
+set_explicit() {
+    sudo pacman -D --asexplicit "$1"
+}
+
+set_deps() {
+    sudo pacman -D --asdeps "$1"
+}
+
+install_package() {
+    sudo pacman -S --needed "$1"
+}
+
+# ---------------------------------------------------------------------------
+# Record functions (generic)
+# ---------------------------------------------------------------------------
+
+save_item() {
+    local type="$1" package="$2" version="${3:-}"
+    local record_path
+
+    case "$type" in
+        removed)
+            mkdir -p -- "$REMOVED_PATH"
+            record_path="${REMOVED_PATH}/${package}"
+            printf '%s|%s\n' "$(date --iso-8601=seconds)" "$version" > "$record_path"
+            ;;
+        kept)
+            mkdir -p -- "$KEPT_PATH"
+            record_path="${KEPT_PATH}/${package}"
+            touch "$record_path"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+delete_item() {
+    local type="$1" package="$2" record_path
+
+    case "$type" in
+        removed) record_path="${REMOVED_PATH}/${package}" ;;
+        kept)    record_path="${KEPT_PATH}/${package}" ;;
+        *) return 1 ;;
+    esac
+
+    rm -f -- "$record_path"
+}
+
+item_exists() {
+    local type="$1" package="$2"
+    case "$type" in
+        removed) [[ -f "${REMOVED_PATH}/${package}" ]] ;;
+        kept)    [[ -f "${KEPT_PATH}/${package}" ]] ;;
+        *) return 1 ;;
+    esac
+}
+
+get_items() {
+    # get_items <type> -> prints one package name per line
+    local type="$1" path
+    case "$type" in
+        removed) path="$REMOVED_PATH" ;;
+        kept)    path="$KEPT_PATH" ;;
+        *) return 1 ;;
+    esac
+    [[ -d "$path" ]] || return 0
+    find "$path" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -rn | cut -d' ' -f2-
+}
+
+save_removed()   { save_item "removed" "$1" "$2"; }
+save_kept()      { save_item "kept" "$1"; }
+delete_removed() { delete_item "removed" "$1"; }
+delete_kept()    { delete_item "kept" "$1"; }
+
+# ---------------------------------------------------------------------------
+# Duration functions
+# ---------------------------------------------------------------------------
+
+validate_duration() {
+    local duration="$1"
+    [[ "$duration" =~ ^[0-9]+[smhdw]$ ]]
+}
+
+duration_human() {
+    local duration="$1" n unit
+    n="${duration%[smhdw]}"
+    unit="${duration: -1}"
+    case "$unit" in
+        s) unit="second" ;;
+        m) unit="minute" ;;
+        h) unit="hour" ;;
+        d) unit="day" ;;
+        w) unit="week" ;;
+    esac
+    [[ "$n" != "1" ]] && unit="${unit}s"
+    printf '%s %s' "$n" "$unit"
+}
+
+duration_to_seconds() {
+    local duration="$1" n unit mult
+    validate_duration "$duration" || die "Invalid duration: $duration"
+    n="${duration%[smhdw]}"
+    unit="${duration: -1}"
+    case "$unit" in
+        s) mult=1 ;;
+        m) mult=60 ;;
+        h) mult=3600 ;;
+        d) mult=86400 ;;
+        w) mult=604800 ;;
+    esac
+    printf '%s' "$(( n * mult ))"
+}
+
+convert_duration() {
+    # returns epoch cutoff = now - duration
+    local duration="$1"
+    printf '%s' "$(( $(date +%s) - $(duration_to_seconds "$duration") ))"
+}
+
+# ---------------------------------------------------------------------------
+# Package information
+# ---------------------------------------------------------------------------
+
+show_package() {
+    local package="$1"
+
+    printf '%s\n' "============================================================"
+    printf ' %s\n' "$package"
+    printf '%s\n' "============================================================"
+
+    if pkg_installed "$package"; then
+        printf 'Version        : %s\n' "$(pkg_field "$package" Version)"
+        printf 'Repository     : %s\n' "$(pkg_field "$package" Repository)"
+        printf 'Installed size : %s\n' "$(pkg_field "$package" "Installed Size")"
+        printf 'Install date   : %s\n' "$(pkg_field "$package" "Install Date")"
+        printf 'Install reason : %s\n' "$(pkg_field "$package" "Install Reason")"
+        printf 'Description    : %s\n' "$(pkg_field "$package" Description)"
+        printf 'Required by    : %s\n' "$(pkg_field "$package" "Required By")"
+        printf 'Optional for   : %s\n' "$(pkg_field "$package" "Optional For")"
+    else
+        printf '(package is not currently installed)\n'
+    fi
+
+    if have pactree; then
+        printf '\nReverse dependencies:\n'
+        local rdeps
+        rdeps="$(pactree -r -u "$package" 2>/dev/null | tail -n +2)"
+        if [[ -n "$rdeps" ]]; then
+            printf '%s\n' "$rdeps"
+        else
+            printf 'None\n'
+        fi
+    fi
+
+    if [[ -r "$PACMAN_LOG" ]]; then
+        printf '\nRecent pacman history:\n'
+        grep -F "] [ALPM] " "$PACMAN_LOG" 2>/dev/null \
+            | grep -E "(installed|upgraded|downgraded|reinstalled|removed) $package " \
+            | tail -n 5 \
+            | sed -E 's/^\[([^]]+)\].*\](.*)$/[\1]\2/'
+    fi
+    printf '\n'
+}
+
+# ---------------------------------------------------------------------------
+# Maintenance
+# ---------------------------------------------------------------------------
+
+create_snapshot() {
+    have snapper || return 0
+    snapper -c root list >/dev/null 2>&1 || return 0
+
+    if confirm "Create a Snapper snapshot before removal?" "Y"; then
+        if sudo snapper -c root create -d "Before cachy-orphan removal"; then
+            return 0
+        else
+            printf 'Snapshot creation failed. Aborting removal.\n' >&2
+            return 1
+        fi
+    fi
+    return 0
+}
+
+cleanup_removed_items() {
+    [[ -d "$REMOVED_PATH" ]] || return 0
+    validate_duration "$REMOVED_RETENTION" || die "Invalid REMOVED_RETENTION: $REMOVED_RETENTION"
+    local cutoff
+    cutoff="$(convert_duration "$REMOVED_RETENTION")"
+    find "$REMOVED_PATH" -maxdepth 1 -type f ! -newermt "@$cutoff" -delete
+}
+
+# ---------------------------------------------------------------------------
+# Record queries / filtering
+# ---------------------------------------------------------------------------
+
+# print_removed_row <package>
+print_removed_row() {
+    local package="$1" version mtime
+    local file="${REMOVED_PATH}/${package}"
+    version="$(cut -d'|' -f2 "$file" 2>/dev/null)"
+    mtime="$(date -d "@$(stat -c %Y "$file")" '+%Y-%m-%d %H:%M')"
+    printf '  %-28s %-16s (removed %s)\n' "$package" "$version" "$mtime"
+}
+
+print_kept_row() {
+    printf '  %s\n' "$1"
+}
+
+# get_removed_items [--all|--last N|--last DURATION|--date DATE|PACKAGE]
+get_removed_items() {
+    [[ -d "$REMOVED_PATH" ]] || return 0
+    local mode="${1:-__default__}" arg="${2:-}"
+    local files=()
+
+    case "$mode" in
+        __default__)
+            local cutoff
+            cutoff="$(convert_duration "$DEFAULT_LIST_RANGE")"
+            mapfile -t files < <(find "$REMOVED_PATH" -maxdepth 1 -type f -newermt "@$cutoff" -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-)
+            ;;
+        --all)
+            mapfile -t files < <(find "$REMOVED_PATH" -maxdepth 1 -type f -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-)
+            ;;
+        --package)
+            [[ -f "${REMOVED_PATH}/${arg}" ]] && files=("$arg")
+            ;;
+        --last)
+            if [[ "$arg" =~ ^[0-9]+$ ]]; then
+                mapfile -t files < <(find "$REMOVED_PATH" -maxdepth 1 -type f -printf '%T@ %f\n' \
+                    | sort -rn | head -n "$arg" | cut -d' ' -f2)
+            else
+                validate_duration "$arg" || die "Invalid duration: $arg"
+                local cutoff
+                cutoff="$(convert_duration "$arg")"
+                mapfile -t files < <(find "$REMOVED_PATH" -maxdepth 1 -type f -newermt "@$cutoff" -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-)
+            fi
+            ;;
+        --date)
+            local start end
+            start="$(date -d "$arg 00:00:00" +%s)" || die "Invalid date: $arg"
+            end="$(date -d "$arg 23:59:59" +%s)"
+            mapfile -t files < <(find "$REMOVED_PATH" -maxdepth 1 -type f -newermt "@$start" ! -newermt "@$end" -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-)
+            ;;
+        --group)
+            # newest file's mtime, minus RESTORE_GROUP_WINDOW
+            local newest cutoff
+            newest="$(find "$REMOVED_PATH" -maxdepth 1 -type f -printf '%T@\n' | sort -rn | head -n1)"
+            [[ -z "$newest" ]] && return 0
+            newest="${newest%.*}"
+            cutoff="$(( newest - $(duration_to_seconds "$RESTORE_GROUP_WINDOW") ))"
+            mapfile -t files < <(find "$REMOVED_PATH" -maxdepth 1 -type f -newermt "@$cutoff" -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-)
+            ;;
+    esac
+
+    [[ ${#files[@]} -gt 0 ]] && printf '%s\n' "${files[@]}"
+    return 0
+}
+
+get_kept_items() {
+    [[ -d "$KEPT_PATH" ]] || return 0
+    local mode="${1:-__default__}" arg="${2:-}"
+
+    case "$mode" in
+        __default__|--all)
+            find "$KEPT_PATH" -maxdepth 1 -type f -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-
+            ;;
+        --package)
+            [[ -f "${KEPT_PATH}/${arg}" ]] && printf '%s\n' "$arg"
+            ;;
+        --last)
+            if [[ "$arg" =~ ^[0-9]+$ ]]; then
+                find "$KEPT_PATH" -maxdepth 1 -type f -printf '%T@ %f\n' | sort -rn | head -n "$arg" | cut -d' ' -f2
+            else
+                validate_duration "$arg" || die "Invalid duration: $arg"
+                local cutoff
+                cutoff="$(convert_duration "$arg")"
+                find "$KEPT_PATH" -maxdepth 1 -type f -newermt "@$cutoff" -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-
+            fi
+            ;;
+        --date)
+            local start end
+            start="$(date -d "$arg 00:00:00" +%s)" || die "Invalid date: $arg"
+            end="$(date -d "$arg 23:59:59" +%s)"
+            find "$KEPT_PATH" -maxdepth 1 -type f -newermt "@$start" ! -newermt "@$end" -printf '%T@ %f\n' | sort -rn | cut -d' ' -f2-
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# Package operations
+# ---------------------------------------------------------------------------
+
+keep_package() {
+    local package="$1"
+    pkg_installed "$package" || die "$package is not installed."
+
+    if set_explicit "$package"; then
+        save_item "kept" "$package"
+        printf '%s marked as kept (installed as explicit).\n' "$package"
+    else
+        die "Failed to mark $package as explicit; kept record not created."
+    fi
+}
+
+unkeep_package() {
+    local package="$1"
+    item_exists "kept" "$package" || die "$package is not recorded as kept by cachy-orphan."
+
+    if set_deps "$package"; then
+        delete_item "kept" "$package"
+        printf '%s is no longer marked as kept. It may reappear as an orphan.\n' "$package"
+    else
+        die "Failed to change install reason; kept record left intact."
+    fi
+}
+
+remove_package() {
+    local package="$1"
+    pkg_installed "$package" || die "$package is not installed."
+
+    local orphans
+    orphans="$(find_orphans)"
+    if ! grep -qx "$package" <<< "$orphans"; then
+        printf 'Warning: pacman does not currently report %s as an orphan.\n' "$package"
+        confirm "Continue anyway?" "N" || { printf 'Skipped.\n'; return 1; }
+    fi
+
+    show_package "$package"
+
+    local version
+    version="$(pkg_field "$package" Version)"
+
+    create_snapshot || return 1
+
+    printf '\nThe following transaction will be run:\n\n'
+    printf '  sudo pacman -Rns %s\n\n' "$package"
+    confirm "Proceed with removal of $package?" "N" || { printf 'Skipped.\n'; return 1; }
+
+    if sudo pacman -Rns --noconfirm "$package"; then
+        save_item "removed" "$package" "$version"
+        log_session "removed $package $version"
+        printf '%s removed successfully. Restoration record created.\n' "$package"
+    else
+        printf 'Removal failed. No record created.\n' >&2
+        return 1
+    fi
+}
+
+restore_one() {
+    # restore_one <package> -> returns 0 on restored/handled, 1 on failure
+    local package="$1"
+
+    item_exists "removed" "$package" || { printf '%s has no cachy-orphan removal record.\n' "$package"; return 1; }
+
+    if pkg_installed "$package"; then
+        printf '%s is already installed. It appears to have been reinstalled outside of cachy-orphan.\n' "$package"
+        if confirm "Remove the cachy-orphan restoration record?" "Y"; then
+            delete_item "removed" "$package"
+        fi
+        return 0
+    fi
+
+    if install_package "$package"; then
+        delete_item "removed" "$package"
+        log_session "restored $package"
+        printf '%s restored.\n' "$package"
+        return 0
+    else
+        printf 'Restoration of %s failed. Record left intact.\n' "$package" >&2
+        return 1
+    fi
+}
+
+restore_package() {
+    # restore_package <mode> [arg]
+    local mode="$1" arg="${2:-}"
+    local -a items
+
+    case "$mode" in
+        __bare__)
+            mapfile -t items < <(get_removed_items --group)
+            [[ ${#items[@]} -eq 0 ]] && { printf 'No removed packages to restore.\n'; return 0; }
+            printf 'The following packages were recently removed:\n\n'
+            ;;
+        --package)
+            mapfile -t items < <(get_removed_items --package "$arg")
+            [[ ${#items[@]} -eq 0 ]] && { printf '%s has no cachy-orphan removal record.\n' "$arg"; return 1; }
+            printf 'The following package will be restored:\n\n'
+            ;;
+        --all)
+            mapfile -t items < <(get_removed_items --all)
+            [[ ${#items[@]} -eq 0 ]] && { printf 'No removed packages recorded.\n'; return 0; }
+            printf 'The following packages will be restored:\n\n'
+            ;;
+        --last)
+            mapfile -t items < <(get_removed_items --last "$arg")
+            [[ ${#items[@]} -eq 0 ]] && { printf 'No removed packages match --last %s.\n' "$arg"; return 0; }
+            printf 'The following packages will be restored:\n\n'
+            ;;
+        --date)
+            mapfile -t items < <(get_removed_items --date "$arg")
+            [[ ${#items[@]} -eq 0 ]] && { printf 'No removed packages match --date %s.\n' "$arg"; return 0; }
+            printf 'The following packages will be restored:\n\n'
+            ;;
+    esac
+
+    local pkg
+    for pkg in "${items[@]}"; do
+        print_removed_row "$pkg"
+    done
+
+    confirm "Continue?" "N" || { printf 'Restore cancelled.\n'; return 0; }
+    printf '\n'
+
+    for pkg in "${items[@]}"; do
+        restore_one "$pkg"
+    done
+}
+
+# ---------------------------------------------------------------------------
+# Listing
+# ---------------------------------------------------------------------------
+
+list_removed() {
+    local mode="${1:-__default__}" arg="${2:-}"
+    local -a items
+    local heading="Packages removed by cachy-orphan"
+
+    case "$mode" in
+        __default__) mapfile -t items < <(get_removed_items); heading+=" within the last $(duration_human "$DEFAULT_LIST_RANGE"):" ;;
+        --all)       mapfile -t items < <(get_removed_items --all); heading+=":" ;;
+        --package)   mapfile -t items < <(get_removed_items --package "$arg"); heading=" " ;;
+        --last)      mapfile -t items < <(get_removed_items --last "$arg"); heading+=" (--last $arg):" ;;
+        --date)      mapfile -t items < <(get_removed_items --date "$arg"); heading+=" on $arg:" ;;
+    esac
+
+    if [[ ${#items[@]} -eq 0 ]]; then
+        printf 'No matching removed records.\n'
+        return 0
+    fi
+
+    printf '%s\n\n' "$heading"
+    for pkg in "${items[@]}"; do
+        print_removed_row "$pkg"
+    done
+}
+
+list_kept() {
+    local mode="${1:-__default__}" arg="${2:-}"
+    local -a items
+    local heading="Packages kept by cachy-orphan:"
+
+    case "$mode" in
+        __default__|--all) mapfile -t items < <(get_kept_items --all) ;;
+        --package)          mapfile -t items < <(get_kept_items --package "$arg"); heading=" " ;;
+        --last)              mapfile -t items < <(get_kept_items --last "$arg"); heading="Packages kept by cachy-orphan (--last $arg):" ;;
+        --date)              mapfile -t items < <(get_kept_items --date "$arg"); heading="Packages kept by cachy-orphan on $arg:" ;;
+    esac
+
+    if [[ ${#items[@]} -eq 0 ]]; then
+        printf 'No matching kept records.\n'
+        return 0
+    fi
+
+    printf '%s\n\n' "$heading"
+    for pkg in "${items[@]}"; do
+        print_kept_row "$pkg"
+    done
+}
+
+# ---------------------------------------------------------------------------
+# Interactive orphan workflow
+# ---------------------------------------------------------------------------
+
+interactive_session() {
+    local -a orphans
+    mapfile -t orphans < <(find_orphans)
+
+    if [[ ${#orphans[@]} -eq 0 ]]; then
+        printf 'No orphaned packages found.\n'
+        return 0
+    fi
+
+    printf 'Found %d orphaned package(s).\n\n' "${#orphans[@]}"
+
+    local pkg choice
+    for pkg in "${orphans[@]}"; do
+        item_exists "kept" "$pkg" && continue  # explicitly kept, skip silently
+
+        show_package "$pkg"
+        printf 'What would you like to do?\n\n'
+        printf '  [S] Skip\n  [K] Keep\n  [R] Remove\n  [Q] Quit\n\n'
+        read -r -p "Choice: " choice
+        case "${choice,,}" in
+            s) printf 'Skipped.\n\n'; continue ;;
+            k) keep_package "$pkg"; printf '\n' ;;
+            r) remove_package "$pkg"; printf '\n' ;;
+            q) printf 'Quitting.\n'; return 0 ;;
+            *) printf 'Unrecognised choice, skipping.\n\n' ;;
+        esac
+    done
+
+    printf 'Done. Use --list-removed to review changes, or --restore to undo recent removals.\n'
+}
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+print_help() {
+    cat <<'EOF'
+cachy-orphan - safe, interactive orphan-package assistant
+
+Usage:
+  cachy-orphan                          Interactively review current orphans
+  cachy-orphan --help                   Show this help
+
+Listing:
+  cachy-orphan --list-removed [FILTER]
+  cachy-orphan --list-kept [FILTER]
+
+  FILTER (for --list-removed / --list-kept):
+    <package>        Show only this package
+    --all            Show all records (--list-removed only)
+    --last N         Show the N most recently recorded packages
+    --last <dur>     Show records within the last <dur> (e.g. 12h, 7d, 2w)
+    --date YYYY-MM-DD Show records from that calendar day
+
+Keep / Unkeep:
+  cachy-orphan --keep <package>         Mark package explicit + keep permanently
+  cachy-orphan --unkeep <package>       Reverse --keep (does not remove package)
+
+Remove:
+  cachy-orphan --remove <package>       Remove a single orphaned package
+
+Restore:
+  cachy-orphan --restore                Restore the most recent removal group
+  cachy-orphan --restore <package>      Restore a specific package
+  cachy-orphan --restore --all          Restore every recorded removal
+  cachy-orphan --restore --last <dur|N>
+  cachy-orphan --restore --date YYYY-MM-DD
+
+Maintenance:
+  cachy-orphan --cleanup                Delete expired removal records now
+
+Durations use suffixes: s=seconds m=minutes h=hours d=days w=weeks (e.g. 90d, 6h, 2w).
+EOF
+}
+
+main() {
+    need_pacman
+
+    mkdir -p -- "$DATA_HOME"
+    SESSION_LOG="${DATA_HOME}/session.log"
+    : > "$SESSION_LOG" 2>/dev/null || SESSION_LOG=""
+
+    if [[ "${AUTOMATIC_CLEANUP,,}" == "true" ]]; then
+        cleanup_removed_items
+    fi
+
+    local cmd="${1:-}"
+
+    case "$cmd" in
+        "")
+            interactive_session
+            ;;
+        --help|-h)
+            print_help
+            ;;
+        --cleanup)
+            cleanup_removed_items
+            printf 'Expired removal records cleaned up.\n'
+            ;;
+        --keep)
+            [[ -n "${2:-}" ]] || die "--keep requires a package name."
+            keep_package "$2"
+            ;;
+        --unkeep)
+            [[ -n "${2:-}" ]] || die "--unkeep requires a package name."
+            unkeep_package "$2"
+            ;;
+        --remove)
+            [[ -n "${2:-}" ]] || die "--remove requires a package name."
+            remove_package "$2"
+            ;;
+        --restore)
+            case "${2:-}" in
+                "")        restore_package "__bare__" ;;
+                --help)    print_help ;;
+                --all)     restore_package "--all" ;;
+                --last)    [[ -n "${3:-}" ]] || die "--last requires a value."; restore_package "--last" "$3" ;;
+                --date)    [[ -n "${3:-}" ]] || die "--date requires a value."; restore_package "--date" "$3" ;;
+                -*)        print_help ;;
+                *)         restore_package "--package" "$2" ;;
+            esac
+            ;;
+        --list-removed)
+            case "${2:-}" in
+                "")        list_removed ;;
+                --help)    print_help ;;
+                --all)     list_removed "--all" ;;
+                --last)    [[ -n "${3:-}" ]] || die "--last requires a value."; list_removed "--last" "$3" ;;
+                --date)    [[ -n "${3:-}" ]] || die "--date requires a value."; list_removed "--date" "$3" ;;
+                -*)        print_help ;;
+                *)         list_removed "--package" "$2" ;;
+            esac
+            ;;
+        --list-kept)
+            case "${2:-}" in
+                "")        list_kept ;;
+                --help)    print_help ;;
+                --all)     list_kept "--all" ;;
+                --last)    [[ -n "${3:-}" ]] || die "--last requires a value."; list_kept "--last" "$3" ;;
+                --date)    [[ -n "${3:-}" ]] || die "--date requires a value."; list_kept "--date" "$3" ;;
+                -*)        print_help ;;
+                *)         list_kept "--package" "$2" ;;
+            esac
+            ;;
+        *)
+            print_help
+            ;;
+    esac
+}
+
+main "$@"
