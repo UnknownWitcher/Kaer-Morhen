@@ -17,11 +17,11 @@ cachyos/
 | | |
 |---|---|
 | **OS** | CachyOS x86_64 |
-| **Kernel** | Linux 6.19.10-1-cachyos |
-| **DE** | KDE Plasma 6.6.3 |
+| **Kernel** | Linux 7.2.0-1-cachyos |
+| **DE** | KDE Plasma 6.7.4 |
 | **WM** | KWin (Wayland) |
-| **Terminal** | Konsole 25.12.3 |
-| **Shell** | fish 4.6.0 (interactive) / Bash (scripts) |
+| **Terminal** | Konsole 26.8.0 |
+| **Shell** | fish 4.8.1 (interactive) / Bash (scripts) |
 | **CPU** | AMD Ryzen 5 5600X |
 | **GPU** | NVIDIA GeForce RTX 3070 |
 | **RAM** | 15.52 GiB |
